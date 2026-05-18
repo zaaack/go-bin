@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>公开列表</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="/">Go Share</a>
+      <nav>
+        <a class="nav-link" href="/">列表</a>
+        <a class="nav-link nav-cta" href="/new">发布</a>
+      </nav>
+    </div>
+  </header>
+  <main class="container page">
+    <section class="hero">
+      <div>
+        <h1>公开分享列表</h1>
+        <p>支持文件下载、复制文本、复制链接和打开链接。置顶内容会优先展示。</p>
+      </div>
+      <a class="button primary" href="/new">新建分享</a>
+    </section>
+
+    {{if .Shares}}
+    <section class="cards">
+      {{range .Shares}}
+      <article class="card">
+        <div class="card-head">
+          <div>
+            <div class="meta-row">
+              <span class="badge kind">{{.Kind}}</span>
+              {{if .IsPinned}}<span class="badge pin">置顶</span>{{end}}
+              {{if .ExpiresAt}}<span class="badge exp">到期 {{.ExpiresAt.Local.Format "2006-01-02 15:04"}}</span>{{else}}<span class="badge exp">永不过期</span>{{end}}
+            </div>
+            <h2><a href="/s/{{.Slug}}">{{.Title}}</a></h2>
+          </div>
+          <span class="time">{{.CreatedAt.Local.Format "2006-01-02 15:04"}}</span>
+        </div>
+
+        {{if eq .Kind "text"}}
+        <pre class="summary">{{summaryTwoLines .ContentText}}</pre>
+        {{else if eq .Kind "link"}}
+        <pre class="summary">{{summaryTwoLines .ContentText}}</pre>
+        {{else}}
+        <p class="summary file-summary">{{if .OriginalName}}{{.OriginalName}}{{else}}{{.Title}}{{end}}</p>
+        {{end}}
+
+        <div class="actions">
+          {{if eq .Kind "file"}}
+          <a class="button" href="/download/{{.Slug}}">下载文件</a>
+          <button class="button ghost" data-copy="/download/{{.Slug}}" data-copy-absolute="true">复制下载链接</button>
+          {{else if eq .Kind "text"}}
+          <button class="button" data-copy-raw="{{.ContentText}}">复制文本</button>
+          {{else if eq .Kind "link"}}
+          <button class="button" data-copy="{{.ContentText}}">复制 URL</button>
+          <a class="button ghost" href="{{.ContentText}}" target="_blank" rel="noopener noreferrer">打开 URL</a>
+          {{end}}
+          <a class="button ghost" href="/s/{{.Slug}}">查看详情</a>
+        </div>
+      </article>
+      {{end}}
+    </section>
+    {{else}}
+    <section class="empty">
+      <h2>还没有公开内容</h2>
+      <p>从发布页上传文件、分享文本或者链接。</p>
+      <a class="button primary" href="/new">去发布</a>
+    </section>
+    {{end}}
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>

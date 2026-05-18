@@ -1,0 +1,4 @@
+go-bin.exe
+*.exe~
+data.db
+uploads/
