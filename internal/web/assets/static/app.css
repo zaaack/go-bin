@@ -91,6 +91,107 @@ nav { display: flex; gap: 12px; align-items: center; }
 
 .panel { padding: 24px; }
 
+.compose-panel {
+  width: min(100%, 760px);
+  margin: 0 auto;
+}
+
+.compose-hint, .compose-status {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.compose-label {
+  margin-bottom: 0;
+}
+
+.compose-label textarea {
+  min-height: 280px;
+  resize: vertical;
+  padding: 18px;
+  border-radius: 18px;
+  background: #f9fbff;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.compose-label textarea:focus {
+  outline: none;
+  border-color: rgba(47, 111, 237, 0.45);
+  box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.12);
+  background: #fff;
+}
+
+.compose-label textarea.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 4px rgba(47, 111, 237, 0.12);
+}
+
+.compose-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 12px;
+}
+
+.compose-toolbar .button {
+  min-height: 46px;
+}
+
+.compose-options {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.option-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  margin-bottom: 0;
+  color: var(--text);
+}
+
+.option-public {
+  flex: 0 0 auto;
+}
+
+.option-expire {
+  flex: 1 1 auto;
+}
+
+.option-expire span {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.option-expire select {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 8px 28px 8px 10px;
+  background-color: transparent;
+}
+
+.option-inline input[type="checkbox"] {
+  margin: 0;
+}
+
+.compose-status {
+  margin-bottom: 0;
+}
+
 .card-head {
   display: flex;
   justify-content: space-between;
@@ -256,6 +357,124 @@ input[type="checkbox"] {
   .hero, .card-head, .topbar-inner {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .container {
+    width: min(100% - 24px, 1120px);
+  }
+
+  .page {
+    padding-top: 20px;
+    padding-bottom: 28px;
+  }
+
+  .panel {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .hero {
+    gap: 12px;
+    margin-bottom: 18px;
+  }
+
+  .hero > a.button,
+  .hero > .button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .cards {
+    gap: 14px;
+  }
+
+  .card {
+    padding: 16px;
+    gap: 12px;
+    border-radius: 18px;
+  }
+
+  .card-head {
+    gap: 8px;
+  }
+
+  .card h2 {
+    font-size: 18px;
+    margin-top: 6px;
+  }
+
+  .meta-row {
+    gap: 6px;
+  }
+
+  .badge {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+
+  .time {
+    font-size: 12px;
+  }
+
+  .summary, .detail-pre, .file-summary {
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .actions {
+    gap: 8px;
+  }
+
+  .actions .button {
+    flex: 1 1 100%;
+    width: 100%;
+    text-align: center;
+  }
+
+  .empty {
+    padding: 36px 18px;
+  }
+
+  .empty .button {
+    width: 100%;
+  }
+
+  .hero h1, .detail h1 {
+    margin-bottom: 8px;
+    font-size: 28px;
+  }
+
+  .compose-hint {
+    margin-bottom: 14px;
+  }
+
+  .compose-label textarea {
+    min-height: 240px;
+    padding: 16px;
+  }
+
+  .compose-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .compose-toolbar .button {
+    width: 100%;
+  }
+
+  .compose-options {
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .option-inline {
+    min-height: 48px;
+  }
+
+  .option-expire select {
+    width: 100%;
+    padding-left: 0;
   }
 
   .grid-3 {

@@ -25,62 +25,35 @@
     </section>
 
     <section class="forms">
-      <form class="panel" action="/shares" method="post" enctype="multipart/form-data">
-        <h2>分享文件</h2>
-        <input type="hidden" name="kind" value="file">
-        <label>标题 <input name="title" placeholder="可选，默认使用原文件名"></label>
-        <label>文件 <input type="file" name="file" required></label>
-        <div class="grid-3">
-          <label>公开 <input type="checkbox" name="is_public" value="1" {{if .Defaults.DefaultPublic}}checked{{end}}></label>
-          <label>置顶 <input type="checkbox" name="is_pinned" value="1" {{if .Defaults.DefaultPin}}checked{{end}}></label>
-          <label>过期时间
-            <select name="expire">
-              <option value="never" {{if isDefaultExpire .Defaults.DefaultExpire "never"}}selected{{end}}>永不过期</option>
-              <option value="1d" {{if isDefaultExpire .Defaults.DefaultExpire "1d"}}selected{{end}}>1 天</option>
-              <option value="7d" {{if isDefaultExpire .Defaults.DefaultExpire "7d"}}selected{{end}}>7 天</option>
-              <option value="30d" {{if isDefaultExpire .Defaults.DefaultExpire "30d"}}selected{{end}}>30 天</option>
-              <option value="1mo" {{if isDefaultExpire .Defaults.DefaultExpire "1mo"}}selected{{end}}>1 个月</option>
-              <option value="3mo" {{if isDefaultExpire .Defaults.DefaultExpire "3mo"}}selected{{end}}>3 个月</option>
-              <option value="1y" {{if isDefaultExpire .Defaults.DefaultExpire "1y"}}selected{{end}}>1 年</option>
-            </select>
-          </label>
-        </div>
-        <button class="button primary" type="submit">发布文件</button>
-      </form>
+      <form class="panel compose-panel" action="/shares" method="post" enctype="multipart/form-data" data-compose-form>
+        <h2>发布内容</h2>
+        <p class="compose-hint">输入文本，或把文件拖拽、粘贴到文本框中。文本 `trim` 后如果只剩一个 URL，会自动按链接分享。</p>
+        <input type="hidden" name="kind" value="text" data-compose-kind>
+        <input type="hidden" name="text" value="" data-compose-text>
+        <input type="hidden" name="link" value="" data-compose-link>
+        <input type="hidden" name="is_public" value="{{if .Defaults.DefaultPublic}}1{{else}}0{{end}}" data-compose-public-hidden>
+        <input type="hidden" name="is_pinned" value="{{if .Defaults.DefaultPin}}1{{else}}0{{end}}">
+        <input type="hidden" name="expire" value="{{.Defaults.DefaultExpire}}" data-compose-expire-hidden>
 
-      <form class="panel" action="/shares" method="post">
-        <h2>分享文本</h2>
-        <input type="hidden" name="kind" value="text">
-        <label>标题 <input name="title" placeholder="可选"></label>
-        <label>文本 <textarea name="text" rows="8" placeholder="输入要分享的内容" required></textarea></label>
-        <div class="grid-3">
-          <label>公开 <input type="checkbox" name="is_public" value="1" {{if .Defaults.DefaultPublic}}checked{{end}}></label>
-          <label>置顶 <input type="checkbox" name="is_pinned" value="1" {{if .Defaults.DefaultPin}}checked{{end}}></label>
-          <label>过期时间
-            <select name="expire">
-              <option value="never" {{if isDefaultExpire .Defaults.DefaultExpire "never"}}selected{{end}}>永不过期</option>
-              <option value="1d" {{if isDefaultExpire .Defaults.DefaultExpire "1d"}}selected{{end}}>1 天</option>
-              <option value="7d" {{if isDefaultExpire .Defaults.DefaultExpire "7d"}}selected{{end}}>7 天</option>
-              <option value="30d" {{if isDefaultExpire .Defaults.DefaultExpire "30d"}}selected{{end}}>30 天</option>
-              <option value="1mo" {{if isDefaultExpire .Defaults.DefaultExpire "1mo"}}selected{{end}}>1 个月</option>
-              <option value="3mo" {{if isDefaultExpire .Defaults.DefaultExpire "3mo"}}selected{{end}}>3 个月</option>
-              <option value="1y" {{if isDefaultExpire .Defaults.DefaultExpire "1y"}}selected{{end}}>1 年</option>
-            </select>
-          </label>
-        </div>
-        <button class="button primary" type="submit">发布文本</button>
-      </form>
+        <label class="compose-label" for="compose-textarea">
+          内容
+          <textarea id="compose-textarea" name="compose" rows="10" placeholder="输入文本，或拖拽 / 粘贴文件到这里" data-compose-textarea></textarea>
+        </label>
 
-      <form class="panel" action="/shares" method="post">
-        <h2>分享链接</h2>
-        <input type="hidden" name="kind" value="link">
-        <label>标题 <input name="title" placeholder="可选"></label>
-        <label>URL <input name="link" placeholder="https://example.com" required></label>
-        <div class="grid-3">
-          <label>公开 <input type="checkbox" name="is_public" value="1" {{if .Defaults.DefaultPublic}}checked{{end}}></label>
-          <label>置顶 <input type="checkbox" name="is_pinned" value="1" {{if .Defaults.DefaultPin}}checked{{end}}></label>
-          <label>过期时间
-            <select name="expire">
+        <div class="compose-toolbar">
+          <input id="compose-file" type="file" name="file" hidden data-compose-file>
+          <button class="button ghost" type="button" data-compose-picker>选择文件</button>
+          <button class="button primary" type="submit" data-compose-submit>上传</button>
+        </div>
+
+        <div class="compose-options">
+          <label class="option-inline option-public" for="compose-public">
+            <span>Public</span>
+            <input id="compose-public" type="checkbox" value="1" {{if .Defaults.DefaultPublic}}checked{{end}} data-compose-public>
+          </label>
+          <label class="option-inline option-expire">
+            <span>过期时间</span>
+            <select data-compose-expire>
               <option value="never" {{if isDefaultExpire .Defaults.DefaultExpire "never"}}selected{{end}}>永不过期</option>
               <option value="1d" {{if isDefaultExpire .Defaults.DefaultExpire "1d"}}selected{{end}}>1 天</option>
               <option value="7d" {{if isDefaultExpire .Defaults.DefaultExpire "7d"}}selected{{end}}>7 天</option>
@@ -91,7 +64,8 @@
             </select>
           </label>
         </div>
-        <button class="button primary" type="submit">发布链接</button>
+
+        <p class="compose-status" data-compose-status>当前将分享文本</p>
       </form>
     </section>
   </main>
