@@ -67,7 +67,6 @@ function initComposeForm() {
   }
 
   const singleFileMode = form.dataset.singleFile === "true"
-  const singleFileMode = form.dataset.singleFile === "true"
   const textarea = form.querySelector("[data-compose-textarea]")
   const fileInput = form.querySelector("[data-compose-file]")
   const picker = form.querySelector("[data-compose-picker]")
