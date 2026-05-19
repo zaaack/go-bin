@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"go-bin/internal/config"
@@ -31,6 +32,8 @@ func NewApp(cfg config.Config, db *sql.DB) (*App, error) {
 		"isDefaultExpire": func(current, expected string) bool {
 			return current == expected
 		},
+		"t": translate,
+		"kindLabel": kindLabel,
 	}).ParseFS(templates, "*.html")
 	if err != nil {
 		return nil, err
@@ -61,10 +64,13 @@ func (a *App) baseData() map[string]any {
 	}
 }
 
-func (a *App) render(w http.ResponseWriter, name string, data map[string]any) {
+func (a *App) render(w http.ResponseWriter, r *http.Request, name string, data map[string]any) {
+	lang := detectLanguage(r.Header.Get("Accept-Language"))
 	for k, v := range a.baseData() {
 		data[k] = v
 	}
+	data["Lang"] = lang
+	data["HTMLLang"] = strings.ReplaceAll(lang, "_", "-")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = a.tmpl.ExecuteTemplate(w, name, data)
 }

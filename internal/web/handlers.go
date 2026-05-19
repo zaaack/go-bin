@@ -24,7 +24,7 @@ func (a *App) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	a.render(w, "list.html", map[string]any{"Shares": shares})
+	a.render(w, r, "list.html", map[string]any{"Shares": shares})
 }
 
 func (a *App) handleNew(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func (a *App) handleNew(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	a.render(w, "new.html", map[string]any{"Defaults": a.cfg})
+	a.render(w, r, "new.html", map[string]any{"Defaults": a.cfg})
 }
 
 func (a *App) handleCreate(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +90,7 @@ func (a *App) handleDetail(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	a.render(w, "detail.html", map[string]any{"Share": share})
+	a.render(w, r, "detail.html", map[string]any{"Share": share})
 }
 
 func (a *App) handleDownload(w http.ResponseWriter, r *http.Request) {

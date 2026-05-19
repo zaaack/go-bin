@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.HTMLLang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,8 +11,8 @@
     <div class="container topbar-inner">
       <a class="brand" href="/">Go Share</a>
       <nav>
-        <a class="nav-link" href="/">列表</a>
-        <a class="nav-link nav-cta" href="/new">发布</a>
+        <a class="nav-link" href="/">{{t .Lang "nav.list"}}</a>
+        <a class="nav-link nav-cta" href="/new">{{t .Lang "nav.new"}}</a>
       </nav>
     </div>
   </header>
@@ -20,52 +20,53 @@
     <section class="detail">
       <div class="panel">
         <div class="meta-row">
-          <span class="badge kind">{{.Share.Kind}}</span>
-          {{if .Share.IsPublic}}<span class="badge">public</span>{{else}}<span class="badge">private</span>{{end}}
-          {{if .Share.IsPinned}}<span class="badge pin">置顶</span>{{end}}
-          {{if .Share.ExpiresAt}}<span class="badge exp">到期 {{.Share.ExpiresAt.Local.Format "2006-01-02 15:04"}}</span>{{else}}<span class="badge exp">永不过期</span>{{end}}
+          <span class="badge kind">{{kindLabel .Lang .Share.Kind}}</span>
+          {{if .Share.IsPublic}}<span class="badge">{{t .Lang "share.visibility.public"}}</span>{{else}}<span class="badge">{{t .Lang "share.visibility.private"}}</span>{{end}}
+          {{if .Share.IsPinned}}<span class="badge pin">{{t .Lang "share.pin"}}</span>{{end}}
+          {{if .Share.ExpiresAt}}<span class="badge exp">{{t .Lang "share.expire.prefix"}} {{.Share.ExpiresAt.Local.Format "2006-01-02 15:04"}}</span>{{else}}<span class="badge exp">{{t .Lang "share.expire.never"}}</span>{{end}}
         </div>
 
         <h1>{{.Share.Title}}</h1>
-        <p class="detail-meta">创建时间：{{.Share.CreatedAt.Local.Format "2006-01-02 15:04:05"}}</p>
-        <p class="detail-meta">详情地址：<code>{{printf "/s/%s" .Share.Slug}}</code></p>
+        <p class="detail-meta">{{t .Lang "detail.createdAt"}}{{.Share.CreatedAt.Local.Format "2006-01-02 15:04:05"}}</p>
+        <p class="detail-meta">{{t .Lang "detail.path"}}<code>{{printf "/s/%s" .Share.Slug}}</code></p>
 
         {{if eq .Share.Kind "file"}}
         <div class="content-block">
-          <p>原文件名：{{if .Share.OriginalName}}{{.Share.OriginalName}}{{else}}{{.Share.Title}}{{end}}</p>
-          <p>大小：{{.Share.SizeBytes}} bytes</p>
-          <p>MIME：{{.Share.MIMEType}}</p>
+          <p>{{t .Lang "detail.originalName"}}{{if .Share.OriginalName}}{{.Share.OriginalName}}{{else}}{{.Share.Title}}{{end}}</p>
+          <p>{{t .Lang "detail.size"}}{{.Share.SizeBytes}} bytes</p>
+          <p>{{t .Lang "detail.mime"}}{{.Share.MIMEType}}</p>
         </div>
         <div class="actions">
-          <a class="button primary" href="/download/{{.Share.Slug}}">下载文件</a>
-          <button class="button ghost" data-copy="/download/{{.Share.Slug}}" data-copy-absolute="true">复制下载链接</button>
+          <a class="button primary" href="/download/{{.Share.Slug}}">{{t .Lang "detail.action.download"}}</a>
+          <button class="button ghost" data-copy="/download/{{.Share.Slug}}" data-copy-absolute="true">{{t .Lang "detail.action.copyDownload"}}</button>
         </div>
         {{else if eq .Share.Kind "text"}}
         <pre class="detail-pre">{{.Share.ContentText}}</pre>
         <div class="actions">
-          <button class="button primary" data-copy-raw="{{.Share.ContentText}}">复制文本</button>
+          <button class="button primary" data-copy-raw="{{.Share.ContentText}}">{{t .Lang "detail.action.copyText"}}</button>
         </div>
         {{else}}
         <div class="content-block">
           <a class="link-block" href="{{.Share.ContentText}}" target="_blank" rel="noopener noreferrer">{{.Share.ContentText}}</a>
         </div>
         <div class="actions">
-          <button class="button primary" data-copy="{{.Share.ContentText}}">复制 URL</button>
-          <a class="button ghost" href="{{.Share.ContentText}}" target="_blank" rel="noopener noreferrer">打开 URL</a>
+          <button class="button primary" data-copy="{{.Share.ContentText}}">{{t .Lang "detail.action.copyURL"}}</button>
+          <a class="button ghost" href="{{.Share.ContentText}}" target="_blank" rel="noopener noreferrer">{{t .Lang "detail.action.openURL"}}</a>
         </div>
         {{end}}
 
         <div class="actions admin-actions">
           <form action="/toggle-pin/{{.Share.Slug}}" method="post">
-            <button class="button" type="submit">{{if .Share.IsPinned}}取消置顶{{else}}置顶{{end}}</button>
+            <button class="button" type="submit">{{if .Share.IsPinned}}{{t .Lang "share.unpin"}}{{else}}{{t .Lang "share.pin"}}{{end}}</button>
           </form>
-          <form action="/delete/{{.Share.Slug}}" method="post" onsubmit="return confirm('确认删除这个分享吗？');">
-            <button class="button danger" type="submit">删除</button>
+          <form action="/delete/{{.Share.Slug}}" method="post" onsubmit="return confirm('{{t .Lang "share.delete.confirm"}}');">
+            <button class="button danger" type="submit">{{t .Lang "share.delete"}}</button>
           </form>
         </div>
       </div>
     </section>
   </main>
+  <script>window.GO_SHARE_LANG = {{printf "%q" .Lang}}</script>
   <script src="/static/app.js"></script>
 </body>
 </html>

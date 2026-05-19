@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.HTMLLang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>新建分享</title>
+  <title>{{t .Lang "new.pageTitle"}}</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -11,23 +11,23 @@
     <div class="container topbar-inner">
       <a class="brand" href="/">Go Share</a>
       <nav>
-        <a class="nav-link" href="/">列表</a>
-        <a class="nav-link nav-cta" href="/new">发布</a>
+        <a class="nav-link" href="/">{{t .Lang "nav.list"}}</a>
+        <a class="nav-link nav-cta" href="/new">{{t .Lang "nav.new"}}</a>
       </nav>
     </div>
   </header>
   <main class="container page">
     <section class="hero compact">
       <div>
-        <h1>新建分享</h1>
-        <p>默认公开、置顶和过期时间来自启动参数。</p>
+        <h1>{{t .Lang "new.title"}}</h1>
+        <p>{{t .Lang "new.description"}}</p>
       </div>
     </section>
 
     <section class="forms">
       <form class="panel compose-panel" action="/shares" method="post" enctype="multipart/form-data" data-compose-form>
-        <h2>发布内容</h2>
-        <p class="compose-hint">输入文本，或把文件拖拽、粘贴到文本框中。文本 `trim` 后如果只剩一个 URL，会自动按链接分享。</p>
+        <h2>{{t .Lang "new.compose.title"}}</h2>
+        <p class="compose-hint">{{t .Lang "new.compose.hint"}}</p>
         <input type="hidden" name="kind" value="text" data-compose-kind>
         <input type="hidden" name="text" value="" data-compose-text>
         <input type="hidden" name="link" value="" data-compose-link>
@@ -36,39 +36,40 @@
         <input type="hidden" name="expire" value="{{.Defaults.DefaultExpire}}" data-compose-expire-hidden>
 
         <label class="compose-label" for="compose-textarea">
-          内容
-          <textarea id="compose-textarea" name="compose" rows="10" placeholder="输入文本，或拖拽 / 粘贴文件到这里" data-compose-textarea></textarea>
+          {{t .Lang "new.compose.label"}}
+          <textarea id="compose-textarea" name="compose" rows="10" placeholder="{{t .Lang "new.compose.placeholder"}}" data-compose-textarea></textarea>
         </label>
 
         <div class="compose-toolbar">
           <input id="compose-file" type="file" name="file" hidden data-compose-file>
-          <button class="button ghost" type="button" data-compose-picker>选择文件</button>
-          <button class="button primary" type="submit" data-compose-submit>上传</button>
+          <button class="button ghost" type="button" data-compose-picker>{{t .Lang "new.compose.pick"}}</button>
+          <button class="button primary" type="submit" data-compose-submit>{{t .Lang "new.compose.upload"}}</button>
         </div>
 
         <div class="compose-options">
           <label class="option-inline option-public" for="compose-public">
-            <span>Public</span>
+            <span>{{t .Lang "new.compose.public"}}</span>
             <input id="compose-public" type="checkbox" value="1" {{if .Defaults.DefaultPublic}}checked{{end}} data-compose-public>
           </label>
           <label class="option-inline option-expire">
-            <span>过期时间</span>
+            <span>{{t .Lang "new.compose.expire"}}</span>
             <select data-compose-expire>
-              <option value="never" {{if isDefaultExpire .Defaults.DefaultExpire "never"}}selected{{end}}>永不过期</option>
-              <option value="1d" {{if isDefaultExpire .Defaults.DefaultExpire "1d"}}selected{{end}}>1 天</option>
-              <option value="7d" {{if isDefaultExpire .Defaults.DefaultExpire "7d"}}selected{{end}}>7 天</option>
-              <option value="30d" {{if isDefaultExpire .Defaults.DefaultExpire "30d"}}selected{{end}}>30 天</option>
-              <option value="1mo" {{if isDefaultExpire .Defaults.DefaultExpire "1mo"}}selected{{end}}>1 个月</option>
-              <option value="3mo" {{if isDefaultExpire .Defaults.DefaultExpire "3mo"}}selected{{end}}>3 个月</option>
-              <option value="1y" {{if isDefaultExpire .Defaults.DefaultExpire "1y"}}selected{{end}}>1 年</option>
+              <option value="never" {{if isDefaultExpire .Defaults.DefaultExpire "never"}}selected{{end}}>{{t .Lang "share.expire.never"}}</option>
+              <option value="1d" {{if isDefaultExpire .Defaults.DefaultExpire "1d"}}selected{{end}}>1d</option>
+              <option value="7d" {{if isDefaultExpire .Defaults.DefaultExpire "7d"}}selected{{end}}>7d</option>
+              <option value="30d" {{if isDefaultExpire .Defaults.DefaultExpire "30d"}}selected{{end}}>30d</option>
+              <option value="1mo" {{if isDefaultExpire .Defaults.DefaultExpire "1mo"}}selected{{end}}>1mo</option>
+              <option value="3mo" {{if isDefaultExpire .Defaults.DefaultExpire "3mo"}}selected{{end}}>3mo</option>
+              <option value="1y" {{if isDefaultExpire .Defaults.DefaultExpire "1y"}}selected{{end}}>1y</option>
             </select>
           </label>
         </div>
 
-        <p class="compose-status" data-compose-status>当前将分享文本</p>
+        <p class="compose-status" data-compose-status></p>
       </form>
     </section>
   </main>
+  <script>window.GO_SHARE_LANG = {{printf "%q" .Lang}}</script>
   <script src="/static/app.js"></script>
 </body>
 </html>

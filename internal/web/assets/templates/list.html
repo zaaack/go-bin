@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="{{.HTMLLang}}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>公开列表</title>
+  <title>{{t .Lang "list.title"}}</title>
   <link rel="stylesheet" href="/static/app.css">
 </head>
 <body>
@@ -11,18 +11,18 @@
     <div class="container topbar-inner">
       <a class="brand" href="/">Go Share</a>
       <nav>
-        <a class="nav-link" href="/">列表</a>
-        <a class="nav-link nav-cta" href="/new">发布</a>
+        <a class="nav-link" href="/">{{t .Lang "nav.list"}}</a>
+        <a class="nav-link nav-cta" href="/new">{{t .Lang "nav.new"}}</a>
       </nav>
     </div>
   </header>
   <main class="container page">
     <section class="hero">
       <div>
-        <h1>公开分享列表</h1>
-        <p>支持文件下载、复制文本、复制链接和打开链接。置顶内容会优先展示。</p>
+        <h1>{{t .Lang "list.title"}}</h1>
+        <p>{{t .Lang "list.description"}}</p>
       </div>
-      <a class="button primary" href="/new">新建分享</a>
+      <a class="button primary" href="/new">{{t .Lang "list.new"}}</a>
     </section>
 
     {{if .Shares}}
@@ -32,9 +32,9 @@
         <div class="card-head">
           <div>
             <div class="meta-row">
-              <span class="badge kind">{{.Kind}}</span>
-              {{if .IsPinned}}<span class="badge pin">置顶</span>{{end}}
-              {{if .ExpiresAt}}<span class="badge exp">到期 {{.ExpiresAt.Local.Format "2006-01-02 15:04"}}</span>{{else}}<span class="badge exp">永不过期</span>{{end}}
+              <span class="badge kind">{{kindLabel $.Lang .Kind}}</span>
+              {{if .IsPinned}}<span class="badge pin">{{t $.Lang "share.pin"}}</span>{{end}}
+              {{if .ExpiresAt}}<span class="badge exp">{{t $.Lang "share.expire.prefix"}} {{.ExpiresAt.Local.Format "2006-01-02 15:04"}}</span>{{else}}<span class="badge exp">{{t $.Lang "share.expire.never"}}</span>{{end}}
             </div>
             <h2><a href="/s/{{.Slug}}">{{.Title}}</a></h2>
           </div>
@@ -51,27 +51,28 @@
 
         <div class="actions">
           {{if eq .Kind "file"}}
-          <a class="button" href="/download/{{.Slug}}">下载文件</a>
-          <button class="button ghost" data-copy="/download/{{.Slug}}" data-copy-absolute="true">复制下载链接</button>
+          <a class="button" href="/download/{{.Slug}}">{{t $.Lang "list.action.download"}}</a>
+          <button class="button ghost" data-copy="/download/{{.Slug}}" data-copy-absolute="true">{{t $.Lang "list.action.copyDownload"}}</button>
           {{else if eq .Kind "text"}}
-          <button class="button" data-copy-raw="{{.ContentText}}">复制文本</button>
+          <button class="button" data-copy-raw="{{.ContentText}}">{{t $.Lang "list.action.copyText"}}</button>
           {{else if eq .Kind "link"}}
-          <button class="button" data-copy="{{.ContentText}}">复制 URL</button>
-          <a class="button ghost" href="{{.ContentText}}" target="_blank" rel="noopener noreferrer">打开 URL</a>
+          <button class="button" data-copy="{{.ContentText}}">{{t $.Lang "list.action.copyURL"}}</button>
+          <a class="button ghost" href="{{.ContentText}}" target="_blank" rel="noopener noreferrer">{{t $.Lang "list.action.openURL"}}</a>
           {{end}}
-          <a class="button ghost" href="/s/{{.Slug}}">查看详情</a>
+          <a class="button ghost" href="/s/{{.Slug}}">{{t $.Lang "list.action.detail"}}</a>
         </div>
       </article>
       {{end}}
     </section>
     {{else}}
     <section class="empty">
-      <h2>还没有公开内容</h2>
-      <p>从发布页上传文件、分享文本或者链接。</p>
-      <a class="button primary" href="/new">去发布</a>
+      <h2>{{t .Lang "list.empty.title"}}</h2>
+      <p>{{t .Lang "list.empty.description"}}</p>
+      <a class="button primary" href="/new">{{t .Lang "list.empty.cta"}}</a>
     </section>
     {{end}}
   </main>
+  <script>window.GO_SHARE_LANG = {{printf "%q" .Lang}}</script>
   <script src="/static/app.js"></script>
 </body>
 </html>
