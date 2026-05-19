@@ -1,5 +1,7 @@
 # go-bin
 
+**English** | **[中文](README.md)**
+
 A lightweight file-sharing web service built with Go, supporting file, text, and link sharing.
 
 ## Installation
