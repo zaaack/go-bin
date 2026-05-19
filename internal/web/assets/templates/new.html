@@ -25,9 +25,9 @@
     </section>
 
     <section class="forms">
-      <form class="panel compose-panel" action="/shares" method="post" enctype="multipart/form-data" data-compose-form>
+      <form class="panel compose-panel" action="/shares" method="post" enctype="multipart/form-data" data-compose-form data-single-file="{{if .Cfg.SingleFile}}true{{else}}false{{end}}">
         <h2>{{t .Lang "new.compose.title"}}</h2>
-        <p class="compose-hint">{{t .Lang "new.compose.hint"}}</p>
+        <p class="compose-hint">{{if .Cfg.SingleFile}}{{t .Lang "new.compose.hint.single"}}{{else}}{{t .Lang "new.compose.hint.multi"}}{{end}}</p>
         <input type="hidden" name="kind" value="text" data-compose-kind>
         <input type="hidden" name="text" value="" data-compose-text>
         <input type="hidden" name="link" value="" data-compose-link>

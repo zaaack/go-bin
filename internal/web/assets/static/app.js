@@ -66,6 +66,7 @@ function initComposeForm() {
     return
   }
 
+  const singleFileMode = form.dataset.singleFile === "true"
   const textarea = form.querySelector("[data-compose-textarea]")
   const fileInput = form.querySelector("[data-compose-file]")
   const picker = form.querySelector("[data-compose-picker]")
@@ -85,7 +86,7 @@ function initComposeForm() {
   function renderFileList() {
     if (!fileList) return
     fileList.innerHTML = ""
-    if (selectedFiles.length === 0) return
+    if (selectedFiles.length === 0 || singleFileMode) return
 
     selectedFiles.forEach((file, index) => {
       const item = document.createElement("div")
@@ -118,8 +119,12 @@ function initComposeForm() {
   }
 
   function addFiles(files) {
-    for (const file of files) {
-      selectedFiles.push(file)
+    if (singleFileMode) {
+      selectedFiles = [files[0]]
+    } else {
+      for (const file of files) {
+        selectedFiles.push(file)
+      }
     }
     updateFileInput()
     renderFileList()
@@ -130,8 +135,13 @@ function initComposeForm() {
     const text = textarea.value.trim()
 
     if (selectedFiles.length > 0) {
-      submit.textContent = `上传 ${selectedFiles.length} 个文件`
-      status.textContent = `当前将上传 ${selectedFiles.length} 个文件`
+      if (singleFileMode) {
+        submit.textContent = "上传文件"
+        status.textContent = `当前将上传文件：${selectedFiles[0].name}`
+      } else {
+        submit.textContent = `上传 ${selectedFiles.length} 个文件`
+        status.textContent = `当前将上传 ${selectedFiles.length} 个文件`
+      }
       return
     }
 
@@ -163,8 +173,8 @@ function initComposeForm() {
   fileInput.addEventListener("change", () => {
     if (fileInput.files.length > 0) {
       addFiles(fileInput.files)
-      // If only one file and no other files, submit immediately
-      if (selectedFiles.length === 1) {
+      // In single file mode, auto-submit when a file is selected
+      if (singleFileMode && selectedFiles.length > 0) {
         form.requestSubmit()
       }
     }
@@ -213,6 +223,10 @@ function initComposeForm() {
     }
 
     addFiles(files)
+    // In single file mode, auto-submit on drop
+    if (singleFileMode && selectedFiles.length > 0) {
+      form.requestSubmit()
+    }
   })
 
   form.addEventListener("submit", (event) => {

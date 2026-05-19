@@ -27,6 +27,7 @@ func main() {
 	fs.BoolVar(&cfg.DefaultPublic, "default-public", cfg.DefaultPublic, "Default public value for new shares")
 	fs.BoolVar(&cfg.DefaultPin, "default-pin", cfg.DefaultPin, "Default pin value for new shares")
 	fs.StringVar(&cfg.DefaultExpire, "default-expire", cfg.DefaultExpire, "Default expiration: never, 1d, 7d, 30d, 1mo, 3mo, 1y")
+	fs.BoolVar(&cfg.SingleFile, "single-file", cfg.SingleFile, "Auto-submit when a single file is selected (disable for multi-file mode)")
 	if err := fs.Parse(os.Args[2:]); err != nil {
 		log.Fatal(err)
 	}

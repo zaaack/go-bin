@@ -13,6 +13,7 @@ type Config struct {
 	DefaultPublic  bool
 	DefaultPin     bool
 	DefaultExpire  string
+	SingleFile     bool
 }
 
 func Default() Config {
@@ -24,6 +25,7 @@ func Default() Config {
 		DefaultPublic: true,
 		DefaultPin:    false,
 		DefaultExpire: "3mo",
+		SingleFile:    true,
 	}
 }
 
