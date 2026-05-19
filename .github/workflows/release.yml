@@ -41,13 +41,15 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: "0"
-        run: go build -trimpath -ldflags="-s -w" -o go-bin${{ matrix.suffix }} ./cmd/go-bin
+        run: |
+          BINARY="go-bin-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}"
+          go build -trimpath -ldflags="-s -w" -o "$BINARY" ./cmd/go-bin
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: go-bin-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: go-bin${{ matrix.suffix }}
+          path: go-bin-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
 
   publish:
     needs: release
@@ -61,11 +63,12 @@ jobs:
       - name: Package
         run: |
           cd artifacts
-          tar czf ../go-bin-linux-amd64.tar.gz go-bin-linux-amd64
-          tar czf ../go-bin-linux-arm64.tar.gz go-bin-linux-arm64
-          tar czf ../go-bin-darwin-amd64.tar.gz go-bin-darwin-amd64
-          tar czf ../go-bin-darwin-arm64.tar.gz go-bin-darwin-arm64
-          zip -r ../go-bin-windows-amd64.zip go-bin-windows-amd64/
+          for f in go-bin-linux-* go-bin-darwin-*; do
+            [ -f "$f" ] && tar czf "../${f}.tar.gz" "$f"
+          done
+          if [ -f go-bin-windows-amd64.exe ]; then
+            zip "../go-bin-windows-amd64.zip" go-bin-windows-amd64.exe
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2

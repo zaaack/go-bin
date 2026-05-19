@@ -17,7 +17,7 @@ try {
     Expand-Archive -Path "$TmpDir\go-bin.zip" -DestinationPath "$TmpDir" -Force
 
     New-Item -ItemType Directory -Path $InstallDir -Force | Out-Null
-    Copy-Item "$TmpDir\go-bin-windows-amd64\$Binary.exe" "$InstallDir\$Binary.exe" -Force
+    Copy-Item "$TmpDir\go-bin-windows-amd64.exe" "$InstallDir\$Binary.exe" -Force
 
     Write-Host "Installed to $InstallDir\$Binary.exe"
     Write-Host "Run: .\$Binary.exe serve"

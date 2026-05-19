@@ -31,7 +31,7 @@ curl -fsSL "$URL" -o "$TMPDIR/go-bin.tar.gz"
 tar xzf "$TMPDIR/go-bin.tar.gz" -C "$TMPDIR"
 
 mkdir -p "$INSTALL_DIR"
-mv "$TMPDIR/go-bin-${PLATFORM}/${BINARY}" "$INSTALL_DIR/${BINARY}"
+mv "$TMPDIR/go-bin-${PLATFORM}" "$INSTALL_DIR/${BINARY}"
 chmod +x "$INSTALL_DIR/${BINARY}"
 
 echo "Installed to $INSTALL_DIR/${BINARY}"
