@@ -195,7 +195,22 @@ function initComposeForm() {
   expireInput.addEventListener("change", syncOptions)
 
   textarea.addEventListener("paste", (event) => {
-    const file = event.clipboardData && event.clipboardData.files && event.clipboardData.files[0]
+    const clipboardData = event.clipboardData
+    if (!clipboardData) return
+
+    // Try files first
+    let file = clipboardData.files && clipboardData.files[0]
+    
+    // If no file, try items (for screenshot paste in some browsers)
+    if (!file && clipboardData.items) {
+      for (const item of clipboardData.items) {
+        if (item.kind === "file") {
+          file = item.getAsFile()
+          if (file) break
+        }
+      }
+    }
+
     if (!file) {
       return
     }
