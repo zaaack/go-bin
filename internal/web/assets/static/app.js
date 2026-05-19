@@ -67,6 +67,7 @@ function initComposeForm() {
   }
 
   const singleFileMode = form.dataset.singleFile === "true"
+  const singleFileMode = form.dataset.singleFile === "true"
   const textarea = form.querySelector("[data-compose-textarea]")
   const fileInput = form.querySelector("[data-compose-file]")
   const picker = form.querySelector("[data-compose-picker]")
@@ -86,7 +87,7 @@ function initComposeForm() {
   function renderFileList() {
     if (!fileList) return
     fileList.innerHTML = ""
-    if (selectedFiles.length === 0 || singleFileMode) return
+    if (selectedFiles.length === 0) return
 
     selectedFiles.forEach((file, index) => {
       const item = document.createElement("div")
@@ -119,23 +120,23 @@ function initComposeForm() {
   }
 
   function addFiles(files) {
-    if (singleFileMode) {
-      selectedFiles = [files[0]]
-    } else {
-      for (const file of files) {
-        selectedFiles.push(file)
-      }
+    for (const file of files) {
+      selectedFiles.push(file)
     }
     updateFileInput()
     renderFileList()
     renderState()
+    // In single file mode, auto-submit after any add operation
+    if (singleFileMode && selectedFiles.length > 0) {
+      form.requestSubmit()
+    }
   }
 
   function renderState() {
     const text = textarea.value.trim()
 
     if (selectedFiles.length > 0) {
-      if (singleFileMode) {
+      if (selectedFiles.length === 1) {
         submit.textContent = "上传文件"
         status.textContent = `当前将上传文件：${selectedFiles[0].name}`
       } else {
@@ -173,10 +174,6 @@ function initComposeForm() {
   fileInput.addEventListener("change", () => {
     if (fileInput.files.length > 0) {
       addFiles(fileInput.files)
-      // In single file mode, auto-submit when a file is selected
-      if (singleFileMode && selectedFiles.length > 0) {
-        form.requestSubmit()
-      }
     }
   })
 
@@ -221,11 +218,7 @@ function initComposeForm() {
     if (files.length === 0) return
 
     event.preventDefault()
-    if (singleFileMode) {
-      submitFile(files[0])
-    } else {
-      addFiles(files)
-    }
+    addFiles(files)
   })
 
   textarea.addEventListener("dragover", (event) => {
@@ -247,10 +240,6 @@ function initComposeForm() {
     }
 
     addFiles(files)
-    // In single file mode, auto-submit on drop
-    if (singleFileMode && selectedFiles.length > 0) {
-      form.requestSubmit()
-    }
   })
 
   form.addEventListener("submit", (event) => {
