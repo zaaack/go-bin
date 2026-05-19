@@ -198,25 +198,34 @@ function initComposeForm() {
     const clipboardData = event.clipboardData
     if (!clipboardData) return
 
-    // Try files first
-    let file = clipboardData.files && clipboardData.files[0]
+    // Collect files from clipboard
+    const files = []
     
-    // If no file, try items (for screenshot paste in some browsers)
-    if (!file && clipboardData.items) {
+    // Try files first
+    if (clipboardData.files && clipboardData.files.length > 0) {
+      for (const file of clipboardData.files) {
+        files.push(file)
+      }
+    }
+    
+    // If no files, try items (for screenshot paste in some browsers)
+    if (files.length === 0 && clipboardData.items) {
       for (const item of clipboardData.items) {
         if (item.kind === "file") {
-          file = item.getAsFile()
-          if (file) break
+          const file = item.getAsFile()
+          if (file) files.push(file)
         }
       }
     }
 
-    if (!file) {
-      return
-    }
+    if (files.length === 0) return
 
     event.preventDefault()
-    submitFile(file)
+    if (singleFileMode) {
+      submitFile(files[0])
+    } else {
+      addFiles(files)
+    }
   })
 
   textarea.addEventListener("dragover", (event) => {
