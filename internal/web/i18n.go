@@ -55,6 +55,8 @@ var messages = map[string]map[string]string{
 		"detail.action.copyText":   "复制文本",
 		"detail.action.copyURL":    "复制 URL",
 		"detail.action.openURL":    "打开 URL",
+		"detail.files.count":       "个文件",
+		"detail.download.all":      "下载全部",
 	},
 	langEN: {
 		"nav.list":                 "List",
@@ -103,6 +105,8 @@ var messages = map[string]map[string]string{
 		"detail.action.copyText":   "Copy text",
 		"detail.action.copyURL":    "Copy URL",
 		"detail.action.openURL":    "Open URL",
+		"detail.files.count":       "files",
+		"detail.download.all":      "Download All",
 	},
 }
 

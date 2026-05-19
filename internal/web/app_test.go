@@ -125,7 +125,7 @@ func createFileShare(t *testing.T, baseURL, filename, content string) string {
 	mustWriteField(t, writer, "title", filename)
 	mustWriteField(t, writer, "is_public", "1")
 	mustWriteField(t, writer, "expire", "3mo")
-	part, err := writer.CreateFormFile("file", filename)
+	part, err := writer.CreateFormFile("files", filename)
 	if err != nil {
 		t.Fatal(err)
 	}

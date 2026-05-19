@@ -31,6 +31,26 @@
         <p class="detail-meta">{{t .Lang "detail.path"}}<code>{{printf "/s/%s" .Share.Slug}}</code></p>
 
         {{if eq .Share.Kind "file"}}
+        {{if gt (len .Share.Files) 1}}
+        <div class="content-block">
+          <p><strong>{{len .Share.Files}} {{t .Lang "detail.files.count"}}</strong></p>
+          <div class="file-list-detail">
+            {{range .Share.Files}}
+            <div class="file-item-detail">
+              <div class="file-info">
+                <span class="file-name-detail">{{.OriginalName}}</span>
+                <span class="file-size">{{.SizeBytes}} bytes</span>
+              </div>
+              <a class="button ghost button-sm" href="/download-file/{{.ID}}">{{t $.Lang "list.action.download"}}</a>
+            </div>
+            {{end}}
+          </div>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="/download/{{.Share.Slug}}">{{t .Lang "detail.download.all"}}</a>
+          <button class="button ghost" data-copy="/download/{{.Share.Slug}}" data-copy-absolute="true">{{t .Lang "detail.action.copyDownload"}}</button>
+        </div>
+        {{else}}
         <div class="content-block">
           <p>{{t .Lang "detail.originalName"}}{{if .Share.OriginalName}}{{.Share.OriginalName}}{{else}}{{.Share.Title}}{{end}}</p>
           <p>{{t .Lang "detail.size"}}{{.Share.SizeBytes}} bytes</p>
@@ -40,6 +60,7 @@
           <a class="button primary" href="/download/{{.Share.Slug}}">{{t .Lang "detail.action.download"}}</a>
           <button class="button ghost" data-copy="/download/{{.Share.Slug}}" data-copy-absolute="true">{{t .Lang "detail.action.copyDownload"}}</button>
         </div>
+        {{end}}
         {{else if eq .Share.Kind "text"}}
         <pre class="detail-pre">{{.Share.ContentText}}</pre>
         <div class="actions">

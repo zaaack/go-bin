@@ -28,7 +28,7 @@ type CreateParams struct {
 	Public  bool
 	Pin     bool
 	Expire  string
-	File    *multipart.FileHeader
+	Files   []*multipart.FileHeader
 }
 
 type Service struct {
@@ -176,25 +176,46 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 
 	switch params.Kind {
 	case model.KindFile:
-		if params.File == nil {
-			return nil, errors.New("file is required")
+		if len(params.Files) == 0 {
+			return nil, errors.New("at least one file is required")
 		}
 		share.Title = fileTitle(params.Title)
-		if strings.TrimSpace(params.Title) == "" {
-			share.Title = fileTitle(params.File.Filename)
+		if strings.TrimSpace(params.Title) == "" && len(params.Files) == 1 {
+			share.Title = fileTitle(params.Files[0].Filename)
+		} else if strings.TrimSpace(params.Title) == "" {
+			share.Title = fmt.Sprintf("%d files", len(params.Files))
 		}
-		share.OriginalName = params.File.Filename
 		share.Slug = buildPrivateToken()
 		if params.Public {
 			share.Slug = buildPublicSlug(share.Title, now)
 		}
-		storedPath, mimeType, sizeBytes, err := s.saveFile(params.File, now)
-		if err != nil {
-			return nil, err
+		
+		// Save all files
+		for _, fh := range params.Files {
+			storedPath, mimeType, sizeBytes, err := s.saveFile(fh, now)
+			if err != nil {
+				// Clean up already saved files
+				for _, file := range share.Files {
+					_ = os.Remove(filepath.Join(s.cfg.UploadsDir, file.StoredPath))
+				}
+				return nil, err
+			}
+			share.Files = append(share.Files, model.ShareFile{
+				StoredPath:   storedPath,
+				OriginalName: fh.Filename,
+				MIMEType:     mimeType,
+				SizeBytes:    sizeBytes,
+				CreatedAt:    now,
+			})
 		}
-		share.StoredPath = storedPath
-		share.MIMEType = mimeType
-		share.SizeBytes = sizeBytes
+		
+		// Set legacy fields for backward compatibility (use first file)
+		if len(share.Files) > 0 {
+			share.StoredPath = share.Files[0].StoredPath
+			share.OriginalName = share.Files[0].OriginalName
+			share.MIMEType = share.Files[0].MIMEType
+			share.SizeBytes = share.Files[0].SizeBytes
+		}
 	case model.KindText:
 		if strings.TrimSpace(params.Text) == "" {
 			return nil, errors.New("text is required")
@@ -224,8 +245,8 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 	}
 
 	if err := s.insertShare(ctx, share); err != nil {
-		if share.StoredPath != "" {
-			_ = os.Remove(filepath.Join(s.cfg.UploadsDir, share.StoredPath))
+		for _, file := range share.Files {
+			_ = os.Remove(filepath.Join(s.cfg.UploadsDir, file.StoredPath))
 		}
 		return nil, err
 	}
@@ -271,7 +292,13 @@ func (s *Service) saveFile(fh *multipart.FileHeader, now time.Time) (string, str
 }
 
 func (s *Service) insertShare(ctx context.Context, share *model.Share) error {
-	result, err := s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	result, err := tx.ExecContext(ctx, `
 		INSERT INTO shares (
 			kind, slug, title, content_text, stored_path, original_name, mime_type,
 			size_bytes, is_public, is_pinned, expires_at, created_at, updated_at
@@ -281,7 +308,22 @@ func (s *Service) insertShare(ctx context.Context, share *model.Share) error {
 		return err
 	}
 	share.ID, _ = result.LastInsertId()
-	return nil
+
+	// Insert files
+	for i := range share.Files {
+		share.Files[i].ShareID = share.ID
+		result, err := tx.ExecContext(ctx, `
+			INSERT INTO share_files (
+				share_id, stored_path, original_name, mime_type, size_bytes, created_at
+			) VALUES (?, ?, ?, ?, ?, ?)
+		`, share.Files[i].ShareID, share.Files[i].StoredPath, share.Files[i].OriginalName, share.Files[i].MIMEType, share.Files[i].SizeBytes, share.Files[i].CreatedAt)
+		if err != nil {
+			return err
+		}
+		share.Files[i].ID, _ = result.LastInsertId()
+	}
+
+	return tx.Commit()
 }
 
 func (s *Service) ListPublic(ctx context.Context) ([]model.Share, error) {
@@ -303,6 +345,12 @@ func (s *Service) ListPublic(ctx context.Context) ([]model.Share, error) {
 		if err != nil {
 			return nil, err
 		}
+		// Load files for each share
+		files, err := s.getShareFiles(ctx, share.ID)
+		if err != nil {
+			return nil, err
+		}
+		share.Files = files
 		shares = append(shares, share)
 	}
 	return shares, rows.Err()
@@ -319,6 +367,12 @@ func (s *Service) GetBySlug(ctx context.Context, slug string) (*model.Share, err
 	if err != nil {
 		return nil, err
 	}
+	// Load files
+	files, err := s.getShareFiles(ctx, share.ID)
+	if err != nil {
+		return nil, err
+	}
+	share.Files = files
 	return &share, nil
 }
 
@@ -332,6 +386,58 @@ func (s *Service) TogglePin(ctx context.Context, slug string) error {
 	return err
 }
 
+func (s *Service) getShareFiles(ctx context.Context, shareID int64) ([]model.ShareFile, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, share_id, stored_path, original_name, mime_type, size_bytes, created_at
+		FROM share_files
+		WHERE share_id = ?
+		ORDER BY id ASC
+	`, shareID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var files []model.ShareFile
+	for rows.Next() {
+		var file model.ShareFile
+		if err := rows.Scan(
+			&file.ID,
+			&file.ShareID,
+			&file.StoredPath,
+			&file.OriginalName,
+			&file.MIMEType,
+			&file.SizeBytes,
+			&file.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		files = append(files, file)
+	}
+	return files, rows.Err()
+}
+
+func (s *Service) GetShareFileByID(ctx context.Context, fileID int64) (*model.ShareFile, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, share_id, stored_path, original_name, mime_type, size_bytes, created_at
+		FROM share_files
+		WHERE id = ?
+	`, fileID)
+	var file model.ShareFile
+	if err := row.Scan(
+		&file.ID,
+		&file.ShareID,
+		&file.StoredPath,
+		&file.OriginalName,
+		&file.MIMEType,
+		&file.SizeBytes,
+		&file.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+	return &file, nil
+}
+
 func (s *Service) Delete(ctx context.Context, slug string) error {
 	share, err := s.GetBySlug(ctx, slug)
 	if err != nil {
@@ -341,6 +447,11 @@ func (s *Service) Delete(ctx context.Context, slug string) error {
 	if err != nil {
 		return err
 	}
+	// Delete all files
+	for _, file := range share.Files {
+		_ = os.Remove(filepath.Join(s.cfg.UploadsDir, file.StoredPath))
+	}
+	// Also delete legacy single file if exists
 	if share.StoredPath != "" {
 		_ = os.Remove(filepath.Join(s.cfg.UploadsDir, share.StoredPath))
 	}

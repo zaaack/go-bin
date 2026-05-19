@@ -31,6 +31,20 @@ func Open(path string) (*sql.DB, error) {
 			updated_at DATETIME NOT NULL
 		);
 
+		CREATE TABLE IF NOT EXISTS share_files (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			share_id INTEGER NOT NULL,
+			stored_path TEXT NOT NULL,
+			original_name TEXT NOT NULL,
+			mime_type TEXT NOT NULL DEFAULT '',
+			size_bytes INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL,
+			FOREIGN KEY (share_id) REFERENCES shares(id) ON DELETE CASCADE
+		);
+
+		CREATE INDEX IF NOT EXISTS idx_share_files_share_id
+		ON share_files(share_id);
+
 		CREATE INDEX IF NOT EXISTS idx_shares_public_pin_created
 		ON shares(is_public, is_pinned, created_at DESC);
 

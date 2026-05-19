@@ -41,10 +41,12 @@
         </label>
 
         <div class="compose-toolbar">
-          <input id="compose-file" type="file" name="file" hidden data-compose-file>
+          <input id="compose-file" type="file" name="files" hidden data-compose-file multiple>
           <button class="button ghost" type="button" data-compose-picker>{{t .Lang "new.compose.pick"}}</button>
           <button class="button primary" type="submit" data-compose-submit>{{t .Lang "new.compose.upload"}}</button>
         </div>
+
+        <div class="file-list" data-compose-file-list></div>
 
         <div class="compose-options">
           <label class="option-inline option-public" for="compose-public">

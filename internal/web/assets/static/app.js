@@ -78,14 +78,60 @@ function initComposeForm() {
   const expireInput = form.querySelector("[data-compose-expire]")
   const expireHidden = form.querySelector("[data-compose-expire-hidden]")
   const status = form.querySelector("[data-compose-status]")
+  const fileList = form.querySelector("[data-compose-file-list]")
+
+  let selectedFiles = []
+
+  function renderFileList() {
+    if (!fileList) return
+    fileList.innerHTML = ""
+    if (selectedFiles.length === 0) return
+
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement("div")
+      item.className = "file-item"
+      item.innerHTML = `
+        <span class="file-name">${escapeHtml(file.name)}</span>
+        <button type="button" class="button ghost button-sm" data-remove-file="${index}">×</button>
+      `
+      fileList.appendChild(item)
+    })
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div")
+    div.textContent = text
+    return div.innerHTML
+  }
+
+  function updateFileInput() {
+    const transfer = new DataTransfer()
+    selectedFiles.forEach(file => transfer.items.add(file))
+    fileInput.files = transfer.files
+  }
+
+  function removeFile(index) {
+    selectedFiles.splice(index, 1)
+    updateFileInput()
+    renderFileList()
+    renderState()
+  }
+
+  function addFiles(files) {
+    for (const file of files) {
+      selectedFiles.push(file)
+    }
+    updateFileInput()
+    renderFileList()
+    renderState()
+  }
 
   function renderState() {
-    const file = fileInput.files && fileInput.files[0]
     const text = textarea.value.trim()
 
-    if (file) {
-      submit.textContent = "上传文件"
-      status.textContent = `当前将上传文件：${file.name}`
+    if (selectedFiles.length > 0) {
+      submit.textContent = `上传 ${selectedFiles.length} 个文件`
+      status.textContent = `当前将上传 ${selectedFiles.length} 个文件`
       return
     }
 
@@ -100,7 +146,9 @@ function initComposeForm() {
   }
 
   function submitFile(file) {
-    setComposeFile(fileInput, file)
+    selectedFiles = [file]
+    updateFileInput()
+    renderFileList()
     renderState()
     form.requestSubmit()
   }
@@ -110,28 +158,34 @@ function initComposeForm() {
     expireHidden.value = expireInput.value
   }
 
-  function firstFile(fileList) {
-    if (!fileList || fileList.length === 0) {
-      return null
-    }
-    return fileList[0]
-  }
-
   picker.addEventListener("click", () => fileInput.click())
 
   fileInput.addEventListener("change", () => {
-    renderState()
-    if (firstFile(fileInput.files)) {
-      form.requestSubmit()
+    if (fileInput.files.length > 0) {
+      addFiles(fileInput.files)
+      // If only one file and no other files, submit immediately
+      if (selectedFiles.length === 1) {
+        form.requestSubmit()
+      }
     }
   })
+
+  // Handle remove file button clicks
+  if (fileList) {
+    fileList.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-remove-file]")
+      if (!button) return
+      const index = parseInt(button.dataset.removeFile, 10)
+      removeFile(index)
+    })
+  }
 
   textarea.addEventListener("input", renderState)
   publicInput.addEventListener("change", syncOptions)
   expireInput.addEventListener("change", syncOptions)
 
   textarea.addEventListener("paste", (event) => {
-    const file = firstFile(event.clipboardData && event.clipboardData.files)
+    const file = event.clipboardData && event.clipboardData.files && event.clipboardData.files[0]
     if (!file) {
       return
     }
@@ -153,22 +207,21 @@ function initComposeForm() {
     event.preventDefault()
     textarea.classList.remove("drag-over")
 
-    const file = firstFile(event.dataTransfer && event.dataTransfer.files)
-    if (!file) {
+    const files = event.dataTransfer && event.dataTransfer.files
+    if (!files || files.length === 0) {
       return
     }
 
-    submitFile(file)
+    addFiles(files)
   })
 
   form.addEventListener("submit", (event) => {
     syncOptions()
 
-    const file = firstFile(fileInput.files)
     const text = textarea.value
     const trimmed = text.trim()
 
-    if (file) {
+    if (selectedFiles.length > 0) {
       kindInput.value = "file"
       textInput.value = ""
       linkInput.value = ""

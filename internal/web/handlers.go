@@ -67,8 +67,8 @@ func (a *App) handleCreate(w http.ResponseWriter, r *http.Request) {
 		Pin:    formBool(r, "is_pinned", false),
 		Expire: firstNonEmpty(r.FormValue("expire"), a.cfg.DefaultExpire),
 	}
-	if fh, ok := fileHeader(r, "file"); ok {
-		params.File = fh
+	if files, ok := fileHeaders(r, "files"); ok {
+		params.Files = files
 	}
 
 	share, err := a.svc.Create(r.Context(), params)
@@ -130,6 +130,54 @@ func (a *App) handleDownload(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.Copy(w, f)
 }
 
+func (a *App) handleDownloadFile(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/download-file/")
+	if idStr == "" {
+		http.NotFound(w, r)
+		return
+	}
+	
+	// Parse file ID
+	var fileID int64
+	if _, err := fmt.Sscanf(idStr, "%d", &fileID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	
+	// Get file from database
+	file, err := a.svc.GetShareFileByID(r.Context(), fileID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	
+	path := filepath.Join(a.cfg.UploadsDir, file.StoredPath)
+	f, err := os.Open(path)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer f.Close()
+
+	name := file.OriginalName
+	if name == "" {
+		name = filepath.Base(path)
+	}
+	ctype := file.MIMEType
+	if ctype == "" {
+		ctype = contentTypeFromName(name)
+	}
+	if ctype == "" {
+		buf := make([]byte, 512)
+		n, _ := f.Read(buf)
+		ctype = http.DetectContentType(buf[:n])
+		_, _ = f.Seek(0, io.SeekStart)
+	}
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	_, _ = io.Copy(w, f)
+}
+
 func (a *App) handleTogglePin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -173,7 +221,7 @@ func formBool(r *http.Request, key string, def bool) bool {
 	return v == "1" || strings.EqualFold(v, "true") || v == "on" || v == "yes"
 }
 
-func fileHeader(r *http.Request, key string) (*multipart.FileHeader, bool) {
+func fileHeaders(r *http.Request, key string) ([]*multipart.FileHeader, bool) {
 	if r.MultipartForm == nil {
 		return nil, false
 	}
@@ -181,7 +229,7 @@ func fileHeader(r *http.Request, key string) (*multipart.FileHeader, bool) {
 	if len(files) == 0 {
 		return nil, false
 	}
-	return files[0], true
+	return files, true
 }
 
 func contentTypeFromName(name string) string {

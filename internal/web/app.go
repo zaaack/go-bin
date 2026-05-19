@@ -48,6 +48,7 @@ func (a *App) Router() http.Handler {
 	mux.HandleFunc("/shares", a.handleCreate)
 	mux.HandleFunc("/s/", a.handleDetail)
 	mux.HandleFunc("/download/", a.handleDownload)
+	mux.HandleFunc("/download-file/", a.handleDownloadFile)
 	mux.HandleFunc("/toggle-pin/", a.handleTogglePin)
 	mux.HandleFunc("/delete/", a.handleDelete)
 	staticFS, err := fs.Sub(embeddedAssets, "assets/static")
