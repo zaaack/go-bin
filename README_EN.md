@@ -79,3 +79,7 @@ go run ./cmd/go-bin serve \
 - `/new` Publish page
 - `/s/{slug}` Detail page
 - `/download/{slug}` File download
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).

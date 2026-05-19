@@ -79,3 +79,7 @@ go run ./cmd/go-bin serve \
 - `/new` 发布页
 - `/s/{slug}` 详情页
 - `/download/{slug}` 文件下载
+
+## 许可证
+
+本项目使用 [MIT 许可证](LICENSE)。

@@ -333,6 +333,8 @@ input[type="checkbox"] {
   text-align: center;
 }
 
+.empty p { margin-bottom: 16px; }
+
 .toast {
   position: fixed;
   right: 20px;
