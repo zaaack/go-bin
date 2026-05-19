@@ -2,6 +2,22 @@
 
 A lightweight file-sharing web service built with Go, supporting file, text, and link sharing.
 
+## Installation
+
+**Linux / macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zaaack/go-bin/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/zaaack/go-bin/main/install.ps1 | iex
+```
+
+You can also download manually from the [Releases](https://github.com/zaaack/go-bin/releases) page.
+
 ## Features
 
 - Public shares appear in the listing page

@@ -2,6 +2,22 @@
 
 基于 Go 的轻量文件分享网页服务，支持分享文件、文本和链接。
 
+## 安装
+
+**Linux / macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zaaack/go-bin/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/zaaack/go-bin/main/install.ps1 | iex
+```
+
+也可以从 [Releases](https://github.com/zaaack/go-bin/releases) 页面手动下载。
+
 ## 功能
 
 - 公开分享会出现在列表页
