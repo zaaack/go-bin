@@ -47,7 +47,18 @@
         {{else if eq .Kind "link"}}
         <pre class="summary">{{summaryTwoLines .ContentText}}</pre>
         {{else}}
-        <p class="summary file-summary">{{if .OriginalName}}{{.OriginalName}}{{else}}{{.Title}}{{end}}</p>
+          {{if and .Files (eq (len .Files) 1) (isImage (index .Files 0).MIMEType)}}
+          <div class="media-preview">
+            <img src="/view/{{(index .Files 0).ID}}" alt="{{(index .Files 0).OriginalName}}" loading="lazy">
+          </div>
+          {{else if and .Files (gt (len .Files) 1) (isImage (index .Files 0).MIMEType)}}
+          <div class="media-preview">
+            <img src="/view/{{(index .Files 0).ID}}" alt="{{(index .Files 0).OriginalName}}" loading="lazy">
+            <span class="media-count">+{{minus (len .Files) 1}}</span>
+          </div>
+          {{else}}
+          <p class="summary file-summary">{{if .OriginalName}}{{.OriginalName}}{{else}}{{.Title}}{{end}}</p>
+          {{end}}
         {{end}}
 
         <div class="actions">

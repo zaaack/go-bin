@@ -42,10 +42,32 @@
                 <span class="file-name-detail">{{.OriginalName}}</span>
                 <span class="file-size">{{.SizeBytes}} bytes</span>
               </div>
-              <a class="button ghost button-sm" href="/download-file/{{.ID}}">{{t $.Lang "list.action.download"}}</a>
+              <div class="file-actions-row">
+                {{if isImage .MIMEType}}
+                <a class="button ghost button-sm" href="/view/{{.ID}}" target="_blank">{{t $.Lang "list.action.preview"}}</a>
+                {{else if isVideo .MIMEType}}
+                <a class="button ghost button-sm" href="/view/{{.ID}}" target="_blank">{{t $.Lang "list.action.play"}}</a>
+                {{end}}
+                <a class="button ghost button-sm" href="/download-file/{{.ID}}">{{t $.Lang "list.action.download"}}</a>
+              </div>
             </div>
             {{end}}
           </div>
+        </div>
+        <div class="media-gallery">
+          {{range .Share.Files}}
+          {{if isImage .MIMEType}}
+          <div class="media-item">
+            <img src="/view/{{.ID}}" alt="{{.OriginalName}}" loading="lazy">
+          </div>
+          {{else if isVideo .MIMEType}}
+          <div class="media-item">
+            <video controls preload="metadata">
+              <source src="/view/{{.ID}}" type="{{.MIMEType}}">
+            </video>
+          </div>
+          {{end}}
+          {{end}}
         </div>
         <div class="actions">
           <a class="button primary" href="/download/{{.Share.Slug}}">{{t .Lang "detail.download.all"}}</a>
@@ -57,6 +79,17 @@
           <p>{{t .Lang "detail.size"}}{{.Share.SizeBytes}} bytes</p>
           <p>{{t .Lang "detail.mime"}}{{.Share.MIMEType}}</p>
         </div>
+        {{if isImage .Share.MIMEType}}
+        <div class="media-detail">
+          <img src="/download/{{.Share.Slug}}" alt="{{.Share.OriginalName}}">
+        </div>
+        {{else if isVideo .Share.MIMEType}}
+        <div class="media-detail">
+          <video controls preload="metadata">
+            <source src="/download/{{.Share.Slug}}" type="{{.Share.MIMEType}}">
+          </video>
+        </div>
+        {{end}}
         <div class="actions">
           <a class="button primary" href="/download/{{.Share.Slug}}">{{t .Lang "detail.action.download"}}</a>
           <button class="button ghost" data-copy="/download/{{.Share.Slug}}" data-copy-absolute="true">{{t .Lang "detail.action.copyDownload"}}</button>

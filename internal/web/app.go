@@ -34,6 +34,9 @@ func NewApp(cfg config.Config, db *sql.DB) (*App, error) {
 		},
 		"t": translate,
 		"kindLabel": kindLabel,
+		"isImage": isImage,
+		"isVideo": isVideo,
+		"minus": func(a, b int) int { return a - b },
 	}).ParseFS(templates, "*.html")
 	if err != nil {
 		return nil, err
@@ -49,6 +52,7 @@ func (a *App) Router() http.Handler {
 	mux.HandleFunc("/s/", a.handleDetail)
 	mux.HandleFunc("/download/", a.handleDownload)
 	mux.HandleFunc("/download-file/", a.handleDownloadFile)
+	mux.HandleFunc("/view/", a.handleView)
 	mux.HandleFunc("/toggle-pin/", a.handleTogglePin)
 	mux.HandleFunc("/delete/", a.handleDelete)
 	staticFS, err := fs.Sub(embeddedAssets, "assets/static")

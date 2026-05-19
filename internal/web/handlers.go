@@ -178,6 +178,57 @@ func (a *App) handleDownloadFile(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.Copy(w, f)
 }
 
+func (a *App) handleView(w http.ResponseWriter, r *http.Request) {
+	idStr := strings.TrimPrefix(r.URL.Path, "/view/")
+	if idStr == "" {
+		http.NotFound(w, r)
+		return
+	}
+
+	var fileID int64
+	if _, err := fmt.Sscanf(idStr, "%d", &fileID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	file, err := a.svc.GetShareFileByID(r.Context(), fileID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	path := filepath.Join(a.cfg.UploadsDir, file.StoredPath)
+	f, err := os.Open(path)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	defer f.Close()
+
+	ctype := file.MIMEType
+	if ctype == "" {
+		ctype = contentTypeFromName(file.OriginalName)
+	}
+	if ctype == "" {
+		buf := make([]byte, 512)
+		n, _ := f.Read(buf)
+		ctype = http.DetectContentType(buf[:n])
+		_, _ = f.Seek(0, io.SeekStart)
+	}
+
+	w.Header().Set("Content-Type", ctype)
+	w.Header().Set("Content-Disposition", fmt.Sprintf("inline; filename=%q", file.OriginalName))
+	_, _ = io.Copy(w, f)
+}
+
+func isImage(mimeType string) bool {
+	return strings.HasPrefix(mimeType, "image/")
+}
+
+func isVideo(mimeType string) bool {
+	return strings.HasPrefix(mimeType, "video/")
+}
+
 func (a *App) handleTogglePin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
