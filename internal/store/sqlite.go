@@ -13,6 +13,12 @@ func Open(path string) (*sql.DB, error) {
 		return nil, err
 	}
 
+	// Enable WAL mode for better concurrent read/write performance.
+	if _, err := db.Exec(`PRAGMA journal_mode=WAL`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("enable wal mode: %w", err)
+	}
+
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS shares (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
