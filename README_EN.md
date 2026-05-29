@@ -28,6 +28,7 @@ You can also download manually from the [Releases](https://github.com/zaaack/go-
 - Text and links show a 2-line summary in the listing page
 - Listing page supports file download, text copy, URL copy, and URL opening
 - Detail page supports download, copy download link, copy text, copy URL, open URL
+- Image and video inline preview
 - Pinning support
 - Expiration time and never-expire options
 - SQLite for metadata, `uploads/` for file storage

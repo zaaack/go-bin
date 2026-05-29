@@ -28,6 +28,7 @@ irm https://raw.githubusercontent.com/zaaack/go-bin/main/install.ps1 | iex
 - 文本和链接在列表页展示前 2 行摘要
 - 列表页支持下载文件、复制文本、复制 URL、打开 URL
 - 详情页支持下载、复制下载链接、复制文本、复制 URL、打开 URL
+- 图片和视频支持在线预览
 - 支持置顶
 - 支持过期时间和永不过期
 - SQLite 存元数据，`uploads/` 存文件
