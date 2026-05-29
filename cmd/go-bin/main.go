@@ -40,7 +40,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer sqlDB.Close()
 
 	if err := os.MkdirAll(cfg.UploadsDir, 0o755); err != nil {
 		log.Fatal(err)

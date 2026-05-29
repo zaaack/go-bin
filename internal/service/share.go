@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -18,25 +17,27 @@ import (
 
 	"go-bin/internal/config"
 	"go-bin/internal/model"
+
+	"gorm.io/gorm"
 )
 
 type CreateParams struct {
-	Kind    string
-	Title   string
-	Text    string
-	Link    string
-	Public  bool
-	Pin     bool
-	Expire  string
-	Files   []*multipart.FileHeader
+	Kind   string
+	Title  string
+	Text   string
+	Link   string
+	Public bool
+	Pin    bool
+	Expire string
+	Files  []*multipart.FileHeader
 }
 
 type Service struct {
-	db  *sql.DB
+	db  *gorm.DB
 	cfg config.Config
 }
 
-func New(db *sql.DB, cfg config.Config) *Service {
+func New(db *gorm.DB, cfg config.Config) *Service {
 	return &Service{db: db, cfg: cfg}
 }
 
@@ -167,8 +168,8 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 
 	share := &model.Share{
 		Kind:      params.Kind,
-		IsPublic:  params.Public,
-		IsPinned:  params.Pin,
+		IsPublic:  boolToInt(params.Public),
+		IsPinned:  boolToInt(params.Pin),
 		ExpiresAt: expiresAt,
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -189,7 +190,7 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 		if params.Public {
 			share.Slug = buildPublicSlug(share.Title, now)
 		}
-		
+
 		// Save all files
 		for _, fh := range params.Files {
 			storedPath, mimeType, sizeBytes, err := s.saveFile(fh, now)
@@ -208,7 +209,7 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 				CreatedAt:    now,
 			})
 		}
-		
+
 		// Set legacy fields for backward compatibility (use first file)
 		if len(share.Files) > 0 {
 			share.StoredPath = share.Files[0].StoredPath
@@ -244,7 +245,7 @@ func (s *Service) Create(ctx context.Context, params CreateParams) (*model.Share
 		return nil, fmt.Errorf("unsupported share kind: %s", params.Kind)
 	}
 
-	if err := s.insertShare(ctx, share); err != nil {
+	if err := s.insertShare(share); err != nil {
 		for _, file := range share.Files {
 			_ = os.Remove(filepath.Join(s.cfg.UploadsDir, file.StoredPath))
 		}
@@ -291,160 +292,61 @@ func (s *Service) saveFile(fh *multipart.FileHeader, now time.Time) (string, str
 	return storedName, mimeType, size, nil
 }
 
-func (s *Service) insertShare(ctx context.Context, share *model.Share) error {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	result, err := tx.ExecContext(ctx, `
-		INSERT INTO shares (
-			kind, slug, title, content_text, stored_path, original_name, mime_type,
-			size_bytes, is_public, is_pinned, expires_at, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, share.Kind, share.Slug, share.Title, share.ContentText, share.StoredPath, share.OriginalName, share.MIMEType, share.SizeBytes, boolToInt(share.IsPublic), boolToInt(share.IsPinned), share.ExpiresAt, share.CreatedAt, share.UpdatedAt)
-	if err != nil {
-		return err
-	}
-	share.ID, _ = result.LastInsertId()
-
-	// Insert files
-	for i := range share.Files {
-		share.Files[i].ShareID = share.ID
-		result, err := tx.ExecContext(ctx, `
-			INSERT INTO share_files (
-				share_id, stored_path, original_name, mime_type, size_bytes, created_at
-			) VALUES (?, ?, ?, ?, ?, ?)
-		`, share.Files[i].ShareID, share.Files[i].StoredPath, share.Files[i].OriginalName, share.Files[i].MIMEType, share.Files[i].SizeBytes, share.Files[i].CreatedAt)
-		if err != nil {
-			return err
-		}
-		share.Files[i].ID, _ = result.LastInsertId()
-	}
-
-	return tx.Commit()
+func (s *Service) insertShare(share *model.Share) error {
+	return s.db.Create(share).Error
 }
 
-func (s *Service) ListPublic(ctx context.Context) ([]model.Share, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, kind, slug, title, content_text, stored_path, original_name, mime_type,
-			size_bytes, is_public, is_pinned, expires_at, created_at, updated_at
-		FROM shares
-		WHERE is_public = 1 AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-		ORDER BY is_pinned DESC, created_at DESC
-	`)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
+func (s *Service) ListPublic(_ context.Context) ([]model.Share, error) {
 	var shares []model.Share
-	for rows.Next() {
-		share, err := scanShare(rows)
-		if err != nil {
-			return nil, err
-		}
-		// Load files for each share
-		files, err := s.getShareFiles(ctx, share.ID)
-		if err != nil {
-			return nil, err
-		}
-		share.Files = files
-		shares = append(shares, share)
-	}
-	return shares, rows.Err()
+	err := s.db.
+		Preload("Files").
+		Where("is_public = ? AND (expires_at IS NULL OR expires_at > ?)", 1, time.Now().UTC()).
+		Order("is_pinned DESC, created_at DESC").
+		Find(&shares).Error
+	return shares, err
 }
 
-func (s *Service) GetBySlug(ctx context.Context, slug string) (*model.Share, error) {
-	row := s.db.QueryRowContext(ctx, `
-		SELECT id, kind, slug, title, content_text, stored_path, original_name, mime_type,
-			size_bytes, is_public, is_pinned, expires_at, created_at, updated_at
-		FROM shares
-		WHERE slug = ? AND (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)
-	`, slug)
-	share, err := scanShare(row)
+func (s *Service) GetBySlug(_ context.Context, slug string) (*model.Share, error) {
+	var share model.Share
+	err := s.db.
+		Preload("Files").
+		Where("slug = ? AND (expires_at IS NULL OR expires_at > ?)", slug, time.Now().UTC()).
+		First(&share).Error
 	if err != nil {
 		return nil, err
 	}
-	// Load files
-	files, err := s.getShareFiles(ctx, share.ID)
-	if err != nil {
-		return nil, err
-	}
-	share.Files = files
 	return &share, nil
 }
 
-func (s *Service) TogglePin(ctx context.Context, slug string) error {
-	_, err := s.db.ExecContext(ctx, `
-		UPDATE shares
-		SET is_pinned = CASE WHEN is_pinned = 1 THEN 0 ELSE 1 END,
-			updated_at = ?
-		WHERE slug = ?
-	`, time.Now().UTC(), slug)
-	return err
+func (s *Service) TogglePin(_ context.Context, slug string) error {
+	var share model.Share
+	if err := s.db.Where("slug = ?", slug).First(&share).Error; err != nil {
+		return err
+	}
+	newPinned := 0
+	if share.IsPinned == 0 {
+		newPinned = 1
+	}
+	return s.db.Model(&share).Updates(map[string]any{
+		"is_pinned":  newPinned,
+		"updated_at": time.Now().UTC(),
+	}).Error
 }
 
-func (s *Service) getShareFiles(ctx context.Context, shareID int64) ([]model.ShareFile, error) {
-	rows, err := s.db.QueryContext(ctx, `
-		SELECT id, share_id, stored_path, original_name, mime_type, size_bytes, created_at
-		FROM share_files
-		WHERE share_id = ?
-		ORDER BY id ASC
-	`, shareID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var files []model.ShareFile
-	for rows.Next() {
-		var file model.ShareFile
-		if err := rows.Scan(
-			&file.ID,
-			&file.ShareID,
-			&file.StoredPath,
-			&file.OriginalName,
-			&file.MIMEType,
-			&file.SizeBytes,
-			&file.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		files = append(files, file)
-	}
-	return files, rows.Err()
-}
-
-func (s *Service) GetShareFileByID(ctx context.Context, fileID int64) (*model.ShareFile, error) {
-	row := s.db.QueryRowContext(ctx, `
-		SELECT id, share_id, stored_path, original_name, mime_type, size_bytes, created_at
-		FROM share_files
-		WHERE id = ?
-	`, fileID)
+func (s *Service) GetShareFileByID(_ context.Context, fileID int64) (*model.ShareFile, error) {
 	var file model.ShareFile
-	if err := row.Scan(
-		&file.ID,
-		&file.ShareID,
-		&file.StoredPath,
-		&file.OriginalName,
-		&file.MIMEType,
-		&file.SizeBytes,
-		&file.CreatedAt,
-	); err != nil {
+	if err := s.db.First(&file, fileID).Error; err != nil {
 		return nil, err
 	}
 	return &file, nil
 }
 
-func (s *Service) Delete(ctx context.Context, slug string) error {
-	share, err := s.GetBySlug(ctx, slug)
-	if err != nil {
+func (s *Service) Delete(_ context.Context, slug string) error {
+	var share model.Share
+	if err := s.db.Preload("Files").Where("slug = ?", slug).First(&share).Error; err != nil {
 		return err
 	}
-	_, err = s.db.ExecContext(ctx, `DELETE FROM shares WHERE slug = ?`, slug)
-	if err != nil {
+	if err := s.db.Delete(&share).Error; err != nil {
 		return err
 	}
 	// Delete all files
@@ -458,43 +360,8 @@ func (s *Service) Delete(ctx context.Context, slug string) error {
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
-}
-
-func scanShare(s scanner) (model.Share, error) {
-	var share model.Share
-	var expiresAt sql.NullTime
-	var isPublic int
-	var isPinned int
-	if err := s.Scan(
-		&share.ID,
-		&share.Kind,
-		&share.Slug,
-		&share.Title,
-		&share.ContentText,
-		&share.StoredPath,
-		&share.OriginalName,
-		&share.MIMEType,
-		&share.SizeBytes,
-		&isPublic,
-		&isPinned,
-		&expiresAt,
-		&share.CreatedAt,
-		&share.UpdatedAt,
-	); err != nil {
-		return model.Share{}, err
-	}
-	share.IsPublic = isPublic == 1
-	share.IsPinned = isPinned == 1
-	if expiresAt.Valid {
-		share.ExpiresAt = &expiresAt.Time
-	}
-	return share, nil
-}
-
-func boolToInt(v bool) int {
-	if v {
+func boolToInt(b bool) int {
+	if b {
 		return 1
 	}
 	return 0

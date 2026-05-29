@@ -2,7 +2,6 @@ package web
 
 import (
 	"bytes"
-	"database/sql"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -29,7 +28,11 @@ func TestHTTPFlows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer sqlDB.Close()
 
 	cfg := config.Default()
 	cfg.DBPath = dbPath
@@ -245,5 +248,3 @@ func mustWriteField(t *testing.T, writer *multipart.Writer, key, value string) {
 func extractSlug(location string) string {
 	return strings.TrimPrefix(location, "/s/")
 }
-
-var _ *sql.DB

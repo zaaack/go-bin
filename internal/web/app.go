@@ -2,7 +2,6 @@ package web
 
 import (
 	"embed"
-	"database/sql"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -11,6 +10,8 @@ import (
 
 	"go-bin/internal/config"
 	"go-bin/internal/service"
+
+	"gorm.io/gorm"
 )
 
 type App struct {
@@ -22,7 +23,7 @@ type App struct {
 //go:embed assets/templates/*.html assets/static/*
 var embeddedAssets embed.FS
 
-func NewApp(cfg config.Config, db *sql.DB) (*App, error) {
+func NewApp(cfg config.Config, db *gorm.DB) (*App, error) {
 	templates, err := fs.Sub(embeddedAssets, "assets/templates")
 	if err != nil {
 		return nil, err
