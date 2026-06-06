@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Go Bin</string>
+    <string name="title_activity_main">Go Bin</string>
+    <string name="package_name">com.gobin.app</string>
+    <string name="custom_url_scheme">com.gobin.app</string>
+</resources>
