@@ -33,7 +33,6 @@ public class MainActivity extends BridgeActivity {
         if (action == null || type == null) return;
         if (!Intent.ACTION_SEND.equals(action) && !Intent.ACTION_SEND_MULTIPLE.equals(action)) return;
 
-        // Wait for bridge to be ready, then evaluate JS
         bridge.getActivity().runOnUiThread(() -> {
             try {
                 Thread.sleep(500);
