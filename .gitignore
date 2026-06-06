@@ -1,6 +1,7 @@
-*.exe
-*.exe~
+go-bin
+go-bin.exe
 *.db
 *.db-shm
 *.db-wal
 uploads/
+*.exe~
