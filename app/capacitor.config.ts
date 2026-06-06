@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Go Bin',
   webDir: 'dist',
   server: {
-    androidScheme: 'https',
+    androidScheme: 'http',
   },
 };
 

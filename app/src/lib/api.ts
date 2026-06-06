@@ -43,26 +43,19 @@ async function doUpload(baseUrl: string, form: FormData): Promise<string> {
   const resp = await fetch(`${baseUrl}/shares`, {
     method: 'POST',
     body: form,
-    redirect: 'manual',
   });
 
-  // Server returns 303 redirect to /s/{slug}
-  if (resp.status === 303 || resp.status === 302) {
-    const location = resp.headers.get('Location');
-    if (location) {
-      const slug = location.replace(/^.*\/s\//, '');
-      return `${baseUrl}/s/${slug}`;
-    }
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => 'Unknown error');
+    throw new Error(`Upload failed (${resp.status}): ${text}`);
   }
 
-  if (resp.ok) {
-    // If redirect is followed, try to extract slug from final URL
-    const url = new URL(resp.url);
-    if (url.pathname.startsWith('/s/')) {
-      return resp.url;
-    }
+  // After following redirect, final URL is /s/{slug}
+  const finalUrl = resp.url;
+  if (finalUrl.includes('/s/')) {
+    return finalUrl;
   }
 
-  const text = await resp.text().catch(() => 'Unknown error');
-  throw new Error(`Upload failed (${resp.status}): ${text}`);
+  // Fallback: if redirect wasn't followed, return base URL
+  return baseUrl;
 }
