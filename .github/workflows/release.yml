@@ -51,8 +51,45 @@ jobs:
           name: go-bin-${{ matrix.goos }}-${{ matrix.goarch }}
           path: go-bin-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.suffix }}
 
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build APK
+        working-directory: app
+        run: |
+          pnpm build
+          pnpm cap sync android
+          cd android && chmod +x gradlew && ./gradlew assembleDebug
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-bin-android-apk
+          path: app/android/app/build/outputs/apk/debug/app-debug.apk
+
   publish:
-    needs: release
+    needs: [release, android]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
@@ -69,6 +106,9 @@ jobs:
           if [ -f go-bin-windows-amd64.exe ]; then
             zip "../go-bin-windows-amd64.zip" go-bin-windows-amd64.exe
           fi
+          if [ -f app-debug.apk ]; then
+            cp app-debug.apk "../go-bin-android.apk"
+          fi
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
@@ -80,3 +120,4 @@ jobs:
             go-bin-darwin-amd64.tar.gz
             go-bin-darwin-arm64.tar.gz
             go-bin-windows-amd64.zip
+            go-bin-android.apk
