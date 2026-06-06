@@ -1,10 +1,10 @@
 # go-bin
 
-**English** | **[中文](README.md)**
+**[English](README.md)** | **中文**
 
-A lightweight file-sharing web service built with Go, supporting file, text, and link sharing.
+基于 Go 的轻量文件分享网页服务，支持分享文件、文本和链接。
 
-## Installation
+## 安装
 
 **Linux / macOS:**
 
@@ -18,22 +18,22 @@ curl -fsSL https://raw.githubusercontent.com/zaaack/go-bin/main/install.sh | bas
 irm https://raw.githubusercontent.com/zaaack/go-bin/main/install.ps1 | iex
 ```
 
-You can also download manually from the [Releases](https://github.com/zaaack/go-bin/releases) page.
+也可以从 [Releases](https://github.com/zaaack/go-bin/releases) 页面手动下载。
 
-## Features
+## 功能
 
-- Public shares appear in the listing page
-- Private shares use random URLs, accessible only via link
-- Files preserve original filenames for display
-- Text and links show a 2-line summary in the listing page
-- Listing page supports file download, text copy, URL copy, and URL opening
-- Detail page supports download, copy download link, copy text, copy URL, open URL
-- Image and video inline preview
-- Pinning support
-- Expiration time and never-expire options
-- SQLite for metadata, `uploads/` for file storage
+- 公开分享会出现在列表页
+- 私有分享使用随机 URL，仅凭链接访问
+- 文件尽量保留原文件名展示
+- 文本和链接在列表页展示前 2 行摘要
+- 列表页支持下载文件、复制文本、复制 URL、打开 URL
+- 详情页支持下载、复制下载链接、复制文本、复制 URL、打开 URL
+- 图片和视频支持在线预览
+- 支持置顶
+- 支持过期时间和永不过期
+- SQLite 存元数据，`uploads/` 存文件
 
-## Getting Started
+## 启动
 
 ```powershell
 $env:GO111MODULE = "on"
@@ -41,7 +41,7 @@ $env:GOPROXY = "https://goproxy.cn,direct"
 go run ./cmd/go-bin serve
 ```
 
-You can also generate an executable first:
+也可以先生成可执行文件：
 
 ```powershell
 $env:GO111MODULE = "on"
@@ -49,7 +49,7 @@ $env:GOPROXY = "https://goproxy.cn,direct"
 go generate .
 ```
 
-## Parameters
+## 参数
 
 ```powershell
 go run ./cmd/go-bin serve \
@@ -62,9 +62,9 @@ go run ./cmd/go-bin serve \
   --default-expire=3mo
 ```
 
-`--db` supports specifying the SQLite file location.
+`--db` 支持指定 sqlite 文件位置。
 
-`--default-expire` supports:
+`--default-expire` 支持：
 
 - `never`
 - `1d`
@@ -74,13 +74,29 @@ go run ./cmd/go-bin serve \
 - `3mo`
 - `1y`
 
-## Pages
+## 页面
 
-- `/` Public listing page
-- `/new` Publish page
-- `/s/{slug}` Detail page
-- `/download/{slug}` File download
+- `/` 公开列表页
+- `/new` 发布页
+- `/s/{slug}` 详情页
+- `/download/{slug}` 文件下载
 
-## License
+## Android 应用
 
-This project is licensed under the [MIT License](LICENSE).
+`app/` 目录下包含 Android 应用壳，基于 React + Capacitor 构建。
+
+```bash
+cd app
+pnpm install
+pnpm android:build
+```
+
+## 截图
+
+| 列表页 | 发布页 | 详情页 |
+|--------|--------|--------|
+| ![列表页](docs/QQ20260519-090400.png) | ![发布页](docs/QQ20260519-090352.png) | ![详情页](docs/QQ20260519-090342.png) |
+
+## 许可证
+
+本项目使用 [MIT 许可证](LICENSE)。
