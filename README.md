@@ -32,6 +32,7 @@ You can also download manually from the [Releases](https://github.com/zaaack/go-
 - Pinning support
 - Expiration time and never-expire options
 - SQLite for metadata, `uploads/` for file storage
+- Android app supports system share: share files or text from any app directly to go-bin
 
 ## Getting Started
 

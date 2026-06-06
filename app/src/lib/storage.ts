@@ -17,7 +17,7 @@ export async function setServerUrl(url: string): Promise<void> {
 
 export async function getDefaultPublic(): Promise<boolean> {
   const { value } = await Preferences.get({ key: KEYS.defaultPublic });
-  return value === 'true';
+  return value !== 'false';
 }
 
 export async function setDefaultPublic(v: boolean): Promise<void> {

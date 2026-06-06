@@ -32,6 +32,7 @@ irm https://raw.githubusercontent.com/zaaack/go-bin/main/install.ps1 | iex
 - 支持置顶
 - 支持过期时间和永不过期
 - SQLite 存元数据，`uploads/` 存文件
+- Android 应用支持系统分享：从任意应用分享文件或文本到 go-bin
 
 ## 启动
 
