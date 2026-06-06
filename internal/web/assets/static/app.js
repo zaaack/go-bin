@@ -80,6 +80,9 @@ function initComposeForm() {
   const expireHidden = form.querySelector("[data-compose-expire-hidden]")
   const status = form.querySelector("[data-compose-status]")
   const fileList = form.querySelector("[data-compose-file-list]")
+  const progressContainer = form.querySelector("[data-upload-progress]")
+  const progressFill = form.querySelector("[data-progress-fill]")
+  const progressText = form.querySelector("[data-progress-text]")
 
   let selectedFiles = []
 
@@ -242,6 +245,7 @@ function initComposeForm() {
   })
 
   form.addEventListener("submit", (event) => {
+    event.preventDefault()
     syncOptions()
 
     const text = textarea.value
@@ -251,26 +255,60 @@ function initComposeForm() {
       kindInput.value = "file"
       textInput.value = ""
       linkInput.value = ""
-      return
-    }
-
-    if (!trimmed) {
-      event.preventDefault()
+    } else if (!trimmed) {
       toast("请输入文本或选择文件", true)
       textarea.focus()
       return
-    }
-
-    if (isSingleURL(trimmed)) {
+    } else if (isSingleURL(trimmed)) {
       kindInput.value = "link"
       linkInput.value = trimmed
       textInput.value = ""
-      return
+    } else {
+      kindInput.value = "text"
+      textInput.value = text
+      linkInput.value = ""
     }
 
-    kindInput.value = "text"
-    textInput.value = text
-    linkInput.value = ""
+    const formData = new FormData(form)
+    const xhr = new XMLHttpRequest()
+
+    if (selectedFiles.length > 0 && progressContainer) {
+      progressContainer.hidden = false
+      progressFill.style.width = "0%"
+      progressText.textContent = "0%"
+      submit.disabled = true
+
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) {
+          const percent = Math.round((e.loaded / e.total) * 100)
+          progressFill.style.width = percent + "%"
+          progressText.textContent = percent + "%"
+        }
+      })
+    }
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        window.location.href = xhr.responseURL || "/s/"
+      } else {
+        toast("上传失败: " + xhr.statusText, true)
+        if (progressContainer) {
+          progressContainer.hidden = true
+        }
+        submit.disabled = false
+      }
+    })
+
+    xhr.addEventListener("error", () => {
+      toast("网络错误", true)
+      if (progressContainer) {
+        progressContainer.hidden = true
+      }
+      submit.disabled = false
+    })
+
+    xhr.open("POST", form.action)
+    xhr.send(formData)
   })
 
   renderState()
