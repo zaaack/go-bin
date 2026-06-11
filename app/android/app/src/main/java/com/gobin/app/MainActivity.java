@@ -1,18 +1,28 @@
 package com.gobin.app;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.Base64;
+import android.os.Handler;
+import android.os.Looper;
 import android.webkit.MimeTypeMap;
 
 import com.getcapacitor.BridgeActivity;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends BridgeActivity {
+
+    private static final String PREFS_NAME = "CapacitorStorage";
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -33,39 +43,32 @@ public class MainActivity extends BridgeActivity {
         if (action == null || type == null) return;
         if (!Intent.ACTION_SEND.equals(action) && !Intent.ACTION_SEND_MULTIPLE.equals(action)) return;
 
-        bridge.getActivity().runOnUiThread(() -> {
-            try {
-                Thread.sleep(500);
-            } catch (InterruptedException ignored) {}
-
-            if (Intent.ACTION_SEND.equals(action)) {
-                handleSendSingle(intent, type);
-            } else {
-                handleSendMultiple(intent);
-            }
-        });
+        if (Intent.ACTION_SEND.equals(action)) {
+            handleSendSingle(intent, type);
+        } else {
+            handleSendMultiple(intent);
+        }
     }
 
     private void handleSendSingle(Intent intent, String type) {
-        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-
         Uri fileUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
         if (fileUri != null) {
-            String fileJson = uriToFileJson(fileUri);
-            if (fileJson != null) {
-                String escapedText = sharedText != null ? escapeJs(sharedText) : "undefined";
-                String js = "if(window.__handleShareIntent){window.__handleShareIntent("
-                        + escapedText + ",[" + fileJson + "]);}";
-                bridge.getWebView().evaluateJavascript(js, null);
-                return;
-            }
+            String name = getFileName(fileUri);
+            String mimeType = resolveMimeType(fileUri, name);
+            String serverUrl = getPref("server_url");
+            if (serverUrl == null) return;
+
+            executor.execute(() -> {
+                String resultUrl = uploadFileNative(fileUri, name, mimeType, serverUrl);
+                mainHandler.post(() -> notifyJs(resultUrl, null));
+            });
+            return;
         }
 
+        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
         if (sharedText != null) {
-            String escaped = escapeJs(sharedText);
-            String js = "if(window.__handleShareIntent){window.__handleShareIntent("
-                    + escaped + ");}";
-            bridge.getWebView().evaluateJavascript(js, null);
+            pollAndExecute("if(window.__handleShareIntent){window.__handleShareIntent("
+                    + jsonString(sharedText) + ");}");
         }
     }
 
@@ -73,49 +76,125 @@ public class MainActivity extends BridgeActivity {
         ArrayList<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
         if (uris == null || uris.isEmpty()) return;
 
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < uris.size(); i++) {
-            if (i > 0) sb.append(",");
-            String json = uriToFileJson(uris.get(i));
-            if (json != null) sb.append(json);
-        }
-        sb.append("]");
+        String serverUrl = getPref("server_url");
+        if (serverUrl == null) return;
 
-        String js = "if(window.__handleShareIntent){window.__handleShareIntent(undefined,"
-                + sb.toString() + ");}";
-        bridge.getWebView().evaluateJavascript(js, null);
+        executor.execute(() -> {
+            String finalUrl = null;
+            for (Uri uri : uris) {
+                String name = getFileName(uri);
+                String mimeType = resolveMimeType(uri, name);
+                String url = uploadFileNative(uri, name, mimeType, serverUrl);
+                if (url != null) {
+                    finalUrl = url;
+                    break;
+                }
+            }
+            String captured = finalUrl;
+            mainHandler.post(() -> notifyJs(captured, null));
+        });
     }
 
-    private String uriToFileJson(Uri uri) {
+    private void notifyJs(String resultUrl, String error) {
+        String js;
+        if (resultUrl != null) {
+            js = "if(window.__handleShareIntent){window.__handleShareIntent(null,[],"
+                    + jsonString(resultUrl) + ");}";
+        } else if (error != null) {
+            js = "if(window.__handleShareError){window.__handleShareError("
+                    + jsonString(error) + ");}";
+        } else {
+            return;
+        }
+        pollAndExecute(js);
+    }
+
+    private String uploadFileNative(Uri fileUri, String fileName, String mimeType, String serverUrl) {
+        InputStream is = null;
+        OutputStream os = null;
+        HttpURLConnection conn = null;
         try {
-            String name = getFileName(uri);
-            String mimeType = getContentResolver().getType(uri);
-            if (mimeType == null) {
-                mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
-                        name.substring(name.lastIndexOf('.') + 1));
-            }
-            if (mimeType == null) mimeType = "application/octet-stream";
+            String boundary = "----GoBin" + System.currentTimeMillis();
+            URL url = new URL(serverUrl + "/shares");
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setInstanceFollowRedirects(false);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(60000);
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-            InputStream is = getContentResolver().openInputStream(uri);
+            os = conn.getOutputStream();
+
+            writeField(os, boundary, "kind", "file");
+            writeField(os, boundary, "is_public", getDefault("default_public", "true").equals("true") ? "on" : "off");
+            writeField(os, boundary, "expire", getDefault("default_expire", "3mo"));
+
+            byte[] lineEnd = "\r\n".getBytes();
+            os.write(("--" + boundary + "\r\n").getBytes());
+            os.write(("Content-Disposition: form-data; name=\"files\"; filename=\"" + fileName + "\"\r\n").getBytes());
+            os.write(("Content-Type: " + mimeType + "\r\n").getBytes());
+            os.write(lineEnd);
+
+            is = getContentResolver().openInputStream(fileUri);
             if (is == null) return null;
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] buf = new byte[8192];
             int n;
             while ((n = is.read(buf)) != -1) {
-                baos.write(buf, 0, n);
+                os.write(buf, 0, n);
             }
-            is.close();
 
-            String base64 = Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP);
-            String dataUrl = "data:" + mimeType + ";base64," + base64;
+            os.write(lineEnd);
+            os.write(("--" + boundary + "--\r\n").getBytes());
+            os.flush();
 
-            return "{\"name\":" + jsonString(name)
-                    + ",\"uri\":" + jsonString(uri.toString())
-                    + ",\"dataUrl\":" + jsonString(dataUrl) + "}";
+            int code = conn.getResponseCode();
+            if (code == 303) {
+                String location = conn.getHeaderField("Location");
+                if (location != null && location.startsWith("/")) {
+                    return serverUrl + location;
+                }
+                return location;
+            }
+            return null;
         } catch (Exception e) {
             return null;
+        } finally {
+            try { if (is != null) is.close(); } catch (Exception ignored) {}
+            try { if (os != null) os.close(); } catch (Exception ignored) {}
+            if (conn != null) conn.disconnect();
         }
+    }
+
+    private void writeField(OutputStream os, String boundary, String name, String value) throws Exception {
+        byte[] lineEnd = "\r\n".getBytes();
+        os.write(("--" + boundary + "\r\n").getBytes());
+        os.write(("Content-Disposition: form-data; name=\"" + name + "\"\r\n").getBytes());
+        os.write(lineEnd);
+        os.write(value.getBytes());
+        os.write(lineEnd);
+    }
+
+    private String getPref(String key) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        return prefs.getString(key, null);
+    }
+
+    private String getDefault(String key, String fallback) {
+        String val = getPref(key);
+        return val != null ? val : fallback;
+    }
+
+    private String resolveMimeType(Uri uri, String name) {
+        String mimeType = getContentResolver().getType(uri);
+        if (mimeType == null && name != null) {
+            int dot = name.lastIndexOf('.');
+            if (dot >= 0) {
+                mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
+                        name.substring(dot + 1));
+            }
+        }
+        return mimeType != null ? mimeType : "application/octet-stream";
     }
 
     private String getFileName(Uri uri) {
@@ -134,8 +213,22 @@ public class MainActivity extends BridgeActivity {
         return name;
     }
 
-    private static String escapeJs(String s) {
-        return jsonString(s);
+    private void pollAndExecute(String js) {
+        pollAndExecuteWithRetry(js, 0);
+    }
+
+    private void pollAndExecuteWithRetry(String js, int attempt) {
+        if (attempt > 50) return;
+        bridge.getWebView().evaluateJavascript(
+                "typeof window.__handleShareIntent === 'function'",
+                value -> {
+                    if ("true".equals(value)) {
+                        bridge.getWebView().evaluateJavascript(js, null);
+                    } else {
+                        mainHandler.postDelayed(
+                                () -> pollAndExecuteWithRetry(js, attempt + 1), 100);
+                    }
+                });
     }
 
     private static String jsonString(String s) {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { App as CapApp } from '@capacitor/app';
 import { getServerUrl } from './lib/storage';
 import Setup from './pages/Setup';
 import Home from './pages/Home';
@@ -18,6 +19,17 @@ function App() {
         setPage('home');
       }
     });
+  }, []);
+
+  useEffect(() => {
+    const handler = CapApp.addListener('backButton', ({ canGoBack }) => {
+      if (canGoBack) {
+        window.history.back();
+      } else {
+        CapApp.exitApp();
+      }
+    });
+    return () => { handler.then((h) => h.remove()); };
   }, []);
 
   if (page === 'setup') {

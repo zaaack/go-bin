@@ -18,7 +18,12 @@ export interface UploadResult {
 export async function handleShareIntent(
   sharedText?: string,
   sharedFiles?: Array<{ name: string; uri: string; dataUrl: string }>,
+  nativeResultUrl?: string,
 ): Promise<UploadResult | null> {
+  if (nativeResultUrl) {
+    return { url: nativeResultUrl };
+  }
+
   const baseUrl = await getServerUrl();
   if (!baseUrl) return null;
 
@@ -26,7 +31,6 @@ export async function handleShareIntent(
   const expire = await getDefaultExpire();
 
   if (sharedFiles && sharedFiles.length > 0) {
-    // Convert base64 data URLs to File objects
     const files: File[] = [];
     for (const f of sharedFiles) {
       if (f.dataUrl) {
@@ -63,7 +67,9 @@ declare global {
     __handleShareIntent?: (
       text?: string,
       files?: Array<{ name: string; uri: string; dataUrl: string }>,
+      nativeResultUrl?: string,
     ) => void;
+    __handleShareError?: (error: string) => void;
     __shareResult?: UploadResult | null;
     __shareError?: string;
   }
@@ -72,15 +78,20 @@ declare global {
 export function registerShareHandler(
   onResult: (result: UploadResult | null, error?: string) => void,
 ) {
-  window.__handleShareIntent = async (text, files) => {
+  window.__handleShareIntent = async (text, files, nativeResultUrl) => {
     try {
-      const result = await handleShareIntent(text, files);
+      const result = await handleShareIntent(text, files, nativeResultUrl);
       window.__shareResult = result;
       onResult(result);
     } catch (err: any) {
       window.__shareError = err.message;
       onResult(null, err.message);
     }
+  };
+
+  window.__handleShareError = (error: string) => {
+    window.__shareError = error;
+    onResult(null, error);
   };
 }
 

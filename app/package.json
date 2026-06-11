@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "icons": "node scripts/generate-icons.mjs",
     "cap:sync": "cap sync android",
-    "android:build": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug"
+    "android:build": "pnpm build && cap sync android && cd android && ./gradlew assembleDebug",
+    "android:run": "pnpm build && cap run android --webview-devtools"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.0",
