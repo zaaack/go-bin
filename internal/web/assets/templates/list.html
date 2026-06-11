@@ -57,7 +57,7 @@
             <span class="media-count">+{{minus (len .Files) 1}}</span>
           </div>
           {{else}}
-          <p class="summary file-summary">{{if .OriginalName}}{{.OriginalName}}{{else}}{{.Title}}{{end}}</p>
+          <p class="summary file-summary">{{if .OriginalName}}{{.OriginalName}}{{else}}{{.Title}}{{end}} {{if .Files}}{{if eq (len .Files) 1}}{{formatFileSize (index .Files 0).SizeBytes}}{{else}}{{len .Files}} {{t $.Lang "detail.files.count"}} · {{formatFileSize .SizeBytes}}{{end}}{{end}}</p>
           {{end}}
         {{end}}
 

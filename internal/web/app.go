@@ -2,6 +2,7 @@ package web
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -38,6 +39,7 @@ func NewApp(cfg config.Config, db *gorm.DB) (*App, error) {
 		"isImage": isImage,
 		"isVideo": isVideo,
 		"minus": func(a, b int) int { return a - b },
+		"formatFileSize": formatFileSize,
 	}).ParseFS(templates, "*.html")
 	if err != nil {
 		return nil, err
@@ -93,4 +95,22 @@ func (a *App) render(w http.ResponseWriter, r *http.Request, name string, data m
 	data["HTMLLang"] = strings.ReplaceAll(lang, "_", "-")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = a.tmpl.ExecuteTemplate(w, name, data)
+}
+
+func formatFileSize(bytes int64) string {
+	const (
+		KB = 1024
+		MB = KB * 1024
+		GB = MB * 1024
+	)
+	switch {
+	case bytes >= GB:
+		return fmt.Sprintf("%.1f GB", float64(bytes)/float64(GB))
+	case bytes >= MB:
+		return fmt.Sprintf("%.1f MB", float64(bytes)/float64(MB))
+	case bytes >= KB:
+		return fmt.Sprintf("%.1f KB", float64(bytes)/float64(KB))
+	default:
+		return fmt.Sprintf("%d B", bytes)
+	}
 }

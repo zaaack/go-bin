@@ -40,7 +40,7 @@
             <div class="file-item-detail">
               <div class="file-info">
                 <span class="file-name-detail">{{.OriginalName}}</span>
-                <span class="file-size">{{.SizeBytes}} bytes</span>
+                <span class="file-size">{{formatFileSize .SizeBytes}}</span>
               </div>
               <div class="file-actions-row">
                 {{if isImage .MIMEType}}
@@ -76,7 +76,7 @@
         {{else}}
         <div class="content-block">
           <p>{{t .Lang "detail.originalName"}}{{if .Share.OriginalName}}{{.Share.OriginalName}}{{else}}{{.Share.Title}}{{end}}</p>
-          <p>{{t .Lang "detail.size"}}{{.Share.SizeBytes}} bytes</p>
+          <p>{{t .Lang "detail.size"}}{{formatFileSize .Share.SizeBytes}}</p>
           <p>{{t .Lang "detail.mime"}}{{.Share.MIMEType}}</p>
         </div>
         {{if isImage .Share.MIMEType}}
