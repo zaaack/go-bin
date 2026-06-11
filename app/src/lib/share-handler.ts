@@ -70,6 +70,8 @@ declare global {
       nativeResultUrl?: string,
     ) => void;
     __handleShareError?: (error: string) => void;
+    __showNativeLoading?: (fileName?: string) => void;
+    __hideNativeLoading?: () => void;
     __shareResult?: UploadResult | null;
     __shareError?: string;
   }
@@ -77,6 +79,8 @@ declare global {
 
 export function registerShareHandler(
   onResult: (result: UploadResult | null, error?: string) => void,
+  onLoading?: (fileName?: string) => void,
+  onLoadingDone?: () => void,
 ) {
   window.__handleShareIntent = async (text, files, nativeResultUrl) => {
     try {
@@ -92,6 +96,14 @@ export function registerShareHandler(
   window.__handleShareError = (error: string) => {
     window.__shareError = error;
     onResult(null, error);
+  };
+
+  window.__showNativeLoading = (fileName?: string) => {
+    onLoading?.(fileName);
+  };
+
+  window.__hideNativeLoading = () => {
+    onLoadingDone?.();
   };
 }
 

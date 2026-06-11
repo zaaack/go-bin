@@ -11,21 +11,33 @@ export default function Home({ serverUrl, onOpenSettings }: Props) {
   const [shareResult, setShareResult] = useState<UploadResult | null>(null);
   const [shareError, setShareError] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
+  const [nativeLoading, setNativeLoading] = useState(false);
+  const [loadingFileName, setLoadingFileName] = useState<string | null>(null);
 
   useEffect(() => {
-    registerShareHandler((result, error) => {
-      if (result) {
-        setShareResult(result);
-        setShareError(null);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-      } else if (error) {
-        setShareResult(null);
-        setShareError(error);
-        setShowToast(true);
-        setTimeout(() => setShowToast(false), 5000);
-      }
-    });
+    registerShareHandler(
+      (result, error) => {
+        if (result) {
+          setShareResult(result);
+          setShareError(null);
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 5000);
+        } else if (error) {
+          setShareResult(null);
+          setShareError(error);
+          setShowToast(true);
+          setTimeout(() => setShowToast(false), 5000);
+        }
+      },
+      (fileName) => {
+        setNativeLoading(true);
+        setLoadingFileName(fileName || null);
+      },
+      () => {
+        setNativeLoading(false);
+        setLoadingFileName(null);
+      },
+    );
   }, []);
 
   function handleRefresh() {
@@ -56,6 +68,18 @@ export default function Home({ serverUrl, onOpenSettings }: Props) {
         className="web-frame"
         title="Go Bin"
       />
+
+      {nativeLoading && (
+        <div className="loading-overlay">
+          <div className="loading-card">
+            <div className="loading-spinner" />
+            <p className="loading-text">正在上传…</p>
+            {loadingFileName && (
+              <p className="loading-filename">{loadingFileName}</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {showToast && (
         <div className={`toast ${shareError ? 'toast-error' : 'toast-success'}`}>

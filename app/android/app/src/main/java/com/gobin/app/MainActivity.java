@@ -59,8 +59,12 @@ public class MainActivity extends BridgeActivity {
             if (serverUrl == null) return;
 
             executor.execute(() -> {
+                mainHandler.post(() -> evalJs("if(window.__showNativeLoading){window.__showNativeLoading(" + jsonString(name) + ");}"));
                 String resultUrl = uploadFileNative(fileUri, name, mimeType, serverUrl);
-                mainHandler.post(() -> notifyJs(resultUrl, null));
+                mainHandler.post(() -> {
+                    evalJs("if(window.__hideNativeLoading){window.__hideNativeLoading();}");
+                    notifyJs(resultUrl, resultUrl == null ? "上传失败" : null);
+                });
             });
             return;
         }
@@ -80,6 +84,7 @@ public class MainActivity extends BridgeActivity {
         if (serverUrl == null) return;
 
         executor.execute(() -> {
+            mainHandler.post(() -> evalJs("if(window.__showNativeLoading){window.__showNativeLoading();}"));
             String finalUrl = null;
             for (Uri uri : uris) {
                 String name = getFileName(uri);
@@ -91,7 +96,10 @@ public class MainActivity extends BridgeActivity {
                 }
             }
             String captured = finalUrl;
-            mainHandler.post(() -> notifyJs(captured, null));
+            mainHandler.post(() -> {
+                evalJs("if(window.__hideNativeLoading){window.__hideNativeLoading();}");
+                notifyJs(captured, captured == null ? "上传失败" : null);
+            });
         });
     }
 
@@ -211,6 +219,10 @@ public class MainActivity extends BridgeActivity {
             name = path != null ? path : "shared_file";
         }
         return name;
+    }
+
+    private void evalJs(String js) {
+        bridge.getWebView().evaluateJavascript(js, null);
     }
 
     private void pollAndExecute(String js) {
