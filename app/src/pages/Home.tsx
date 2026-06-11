@@ -22,6 +22,9 @@ export default function Home({ serverUrl, onOpenSettings }: Props) {
           setShareError(null);
           setShowToast(true);
           setTimeout(() => setShowToast(false), 5000);
+          if (iframeRef.current) {
+            iframeRef.current.src = serverUrl;
+          }
         } else if (error) {
           setShareResult(null);
           setShareError(error);
