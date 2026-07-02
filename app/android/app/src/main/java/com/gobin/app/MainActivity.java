@@ -129,8 +129,9 @@ public class MainActivity extends BridgeActivity {
             conn.setDoOutput(true);
             conn.setInstanceFollowRedirects(false);
             conn.setConnectTimeout(15000);
-            conn.setReadTimeout(60000);
+            conn.setReadTimeout(600000);
             conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            conn.setChunkedStreamingMode(8192);
 
             os = conn.getOutputStream();
 
@@ -146,7 +147,7 @@ public class MainActivity extends BridgeActivity {
 
             is = getContentResolver().openInputStream(fileUri);
             if (is == null) return null;
-            byte[] buf = new byte[8192];
+            byte[] buf = new byte[65536];
             int n;
             while ((n = is.read(buf)) != -1) {
                 os.write(buf, 0, n);
