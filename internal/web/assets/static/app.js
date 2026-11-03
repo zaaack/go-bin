@@ -11,7 +11,29 @@ function resolveCopyValue(button) {
 }
 
 async function copyText(text) {
-  await navigator.clipboard.writeText(text)
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch (error) {
+      // fall through to execCommand
+    }
+  }
+
+  const textarea = document.createElement("textarea")
+  textarea.value = text
+  textarea.setAttribute("readonly", "")
+  textarea.style.position = "fixed"
+  textarea.style.top = "-9999px"
+  textarea.style.opacity = "0"
+  document.body.appendChild(textarea)
+  textarea.select()
+  textarea.setSelectionRange(0, text.length)
+  const ok = document.execCommand("copy")
+  textarea.remove()
+  if (!ok) {
+    throw new Error("copy failed")
+  }
 }
 
 function toast(message, isError) {

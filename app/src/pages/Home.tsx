@@ -70,6 +70,7 @@ export default function Home({ serverUrl, onOpenSettings }: Props) {
         src={serverUrl}
         className="web-frame"
         title="Go Bin"
+        allow="clipboard-read; clipboard-write"
       />
 
       {nativeLoading && (
